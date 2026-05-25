@@ -1,0 +1,28 @@
+services:
+  - type: web
+    name: tilt-api
+    runtime: python
+    # Render's Python runtime auto-detects 3.x via the `python` line in
+    # requirements OR a runtime.txt file (which we ship). Pinning to 3.12
+    # matches our local dev env.
+    plan: free
+    region: oregon
+    branch: main
+    buildCommand: pip install --upgrade pip && pip install -r requirements.txt
+    startCommand: uvicorn tilt.api.app:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: PORTFOLIO_PROVIDER
+        value: mock
+        # Switch to `groww` at step 17 after credentials are set on Render.
+      - key: GROWW_API_KEY
+        sync: false
+        # `sync: false` keeps the value out of the rendered YAML; set per-env
+        # in the Render dashboard. Empty is fine while PORTFOLIO_PROVIDER=mock.
+      - key: GROWW_API_SECRET
+        sync: false
+      - key: MARKET_DATA_PROVIDER
+        value: yfinance
+      - key: PYTHONUNBUFFERED
+        value: "1"
