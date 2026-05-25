@@ -206,7 +206,9 @@ def build_recommendation(
     from tilt.signals.score import build_score
 
     snap = build_snapshot(close)
-    cmp = float(close.iloc[-1])
+    if snap is None:
+        return None  # ticker has no valid bars — skip
+    cmp = float(close.dropna().iloc[-1])
     lane = assign_lane(snap, cmp, mf_ctx=mf_ctx)
     if lane is None:
         return None

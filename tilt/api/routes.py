@@ -170,8 +170,9 @@ def scan_recommendations(svc: ScanService = Depends(get_scan_service)) -> Recomm
         # tiny duplication, kept for clarity).
         try:
             snap = _build_snap(close)
-            cmp_val = float(close.iloc[-1])
-            diag_snaps.append((snap, cmp_val))
+            if snap is not None:
+                cmp_val = float(close.dropna().iloc[-1])
+                diag_snaps.append((snap, cmp_val))
         except Exception:
             pass
         mf_ctx = smart_money_context(ticker, funds)

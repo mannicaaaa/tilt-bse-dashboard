@@ -42,18 +42,18 @@ class ScanInput:
     avg_buy: float | None = None  # only needed by averaging scan
 
 
-def build_snapshot(close: pd.Series) -> IndicatorSnapshot:
+def build_snapshot(close: pd.Series) -> IndicatorSnapshot | None:
     """Compute the indicator snapshot for the latest *valid* bar of ``close``.
 
     yfinance can return a trailing NaN for the current (incomplete) trading
-    day. Naively reading ``close.iloc[-1]`` would propagate NaN into ``cmp``
-    and ``pct_below_52w_high``, which then breaks every lane filter that
-    uses ``cmp > ema20`` (NaN comparisons return False). Trim to the last
-    valid index before all latest-bar reads.
+    day, AND occasionally returns an all-NaN series for a ticker (delisted
+    mid-window, fetch hiccup, etc). We trim to the last valid index before
+    every latest-bar read. Returns ``None`` if no valid bar exists — callers
+    should treat that as "skip this ticker," not a hard error.
     """
     last_valid = close.last_valid_index()
     if last_valid is None:
-        raise ValueError("close series has no valid (non-NaN) values")
+        return None
     close_trimmed = close.loc[:last_valid]
 
     rsi_series = rsi(close_trimmed, length=14)
@@ -112,7 +112,9 @@ def run_rally_scan(inputs: list[ScanInput]) -> list[SignalResult]:
     results: list[SignalResult] = []
     for inp in inputs:
         snap = build_snapshot(inp.close)
-        cmp = float(inp.close.iloc[-1])
+        if snap is None:
+            continue
+        cmp = float(inp.close.dropna().iloc[-1])
         verdict = evaluate_rally(snap, cmp)
         if not verdict.passed:
             continue
@@ -138,7 +140,9 @@ def run_averaging_scan(inputs: list[ScanInput]) -> list[SignalResult]:
     results: list[SignalResult] = []
     for inp in inputs:
         snap = build_snapshot(inp.close)
-        cmp = float(inp.close.iloc[-1])
+        if snap is None:
+            continue
+        cmp = float(inp.close.dropna().iloc[-1])
         verdict = evaluate_averaging(snap, cmp, inp.avg_buy)
         if not verdict.passed:
             continue
@@ -164,7 +168,9 @@ def run_trap_scan(inputs: list[ScanInput]) -> list[SignalResult]:
     results: list[SignalResult] = []
     for inp in inputs:
         snap = build_snapshot(inp.close)
-        cmp = float(inp.close.iloc[-1])
+        if snap is None:
+            continue
+        cmp = float(inp.close.dropna().iloc[-1])
         verdict = evaluate_trap(snap)
         if not verdict.passed:
             continue

@@ -40,7 +40,9 @@ def compute_sector_momentum(constituent_closes: dict[str, pd.Series]) -> float:
         if len(close.dropna()) < 30:  # not enough bars to compute meaningful momentum
             continue
         snap = build_snapshot(close)
-        cmp = float(close.iloc[-1])
+        if snap is None:
+            continue
+        cmp = float(close.dropna().iloc[-1])
         scores.append(momentum_score(snap, cmp))
     return mean(scores) if scores else 0.0
 
