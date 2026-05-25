@@ -328,6 +328,8 @@ def scan_brief(
             thesis=pick.thesis,
             thesis_short=pick.thesis_short,
             why_this=pick.why_this,
+            fund_blurbs=pick.fund_blurbs,
+            projections=pick.projections,
         )
 
     return BriefResponse(

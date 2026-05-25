@@ -16,6 +16,7 @@ behind the same interface — same pattern as ``MarketDataProvider``.
 
 from __future__ import annotations
 
+from tilt.funds.fund_meta import FUND_META, get_fund_meta
 from tilt.funds.loader import (
     DEFAULT_MF_CSV_PATH,
     MutualFund,
@@ -25,8 +26,10 @@ from tilt.funds.signals import MFContext, mf_universe, smart_money_context
 
 __all__ = [
     "DEFAULT_MF_CSV_PATH",
+    "FUND_META",
     "MFContext",
     "MutualFund",
+    "get_fund_meta",
     "load_mf_holdings",
     "mf_universe",
     "smart_money_context",

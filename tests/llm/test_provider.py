@@ -275,7 +275,7 @@ def test_thesis_prompt_contains_no_invented_numbers() -> None:
     assert "11" in prompt  # pct_below_52w_high
     assert "8 days ago" in prompt or "8" in prompt
     # The critical-rules block must be present (anti-hallucination).
-    assert "Do not invent" in prompt
+    assert "NEVER invent" in prompt or "Do not invent" in prompt
     assert "ONLY the values" in prompt
 
 
@@ -289,5 +289,5 @@ def test_market_read_prompt_contains_grounding_rules() -> None:
     )
     assert "2026-03-27" in prompt
     assert "Nifty IT" in prompt
-    assert "Do not invent" in prompt
+    assert "NEVER invent" in prompt or "Do not invent" in prompt
     assert "ONLY the numbers" in prompt

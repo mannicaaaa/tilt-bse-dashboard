@@ -10,48 +10,55 @@ from __future__ import annotations
 import json
 from typing import Any
 
-THESIS_TEMPLATE = """You are a CFA-level equity analyst writing a 2-3 sentence buy thesis.
+THESIS_TEMPLATE = """You are writing for a retail Indian investor who has NEVER taken a finance class.
+Your job: explain in 2-3 sentences why this stock might be a good buy today, using plain English.
 
 Stock: {ticker} ({name})
 Sector: {sector} ({sector_tag})
-Lane: {lane}
-Indicators (these are the ONLY facts you may cite):
-  RSI: {rsi}
-  MACD histogram: {macd_hist}
-  Price: Rs.{cmp}
-  EMA20: Rs.{ema20}
-  Distance below 52-week high: {pct_below_52w_high}%
-  MACD crossover: {macd_crossover_days_ago} days ago
+Lane category: {lane}
+
+The numbers you can use (these are the ONLY facts you may cite):
+  Buying pressure score (RSI): {rsi} out of 100  (above 70 = overheated, below 30 = beaten down, 40-60 = healthy)
+  Momentum score (MACD histogram): {macd_hist}  (positive = trend turning up)
+  Today's price: Rs.{cmp}
+  Recent 20-day average price: Rs.{ema20}
+  How much below the 52-week peak: {pct_below_52w_high}%
+  Days since momentum turned positive: {macd_crossover_days_ago}
 Mutual fund context: {mf_context}
 
-Pros (already analyzed): {pros}
-Cons (already analyzed): {cons}
+What's good about this stock today: {pros}
+What to watch out for: {cons}
 
-CRITICAL RULES:
-- Use ONLY the values above. Do not invent prices, percentages, or company facts.
-- Write 2-3 sentences total. Plain English. No jargon-heavy phrasing.
-- Explain WHY the technical signals matter for an entry decision.
-- If MF context is present, weave in that fund-manager conviction.
-- Do not output disclaimers, ratings, or price targets.
+CRITICAL RULES — read carefully:
+- Use ONLY the values above. NEVER invent prices, percentages, or facts.
+- Write like you're texting a friend who doesn't know stocks. NO jargon like "MACD", "RSI", "EMA20", "52w gap", "histogram", "rally band". Translate them.
+  - Instead of "MACD turned positive" → "momentum just shifted upward"
+  - Instead of "RSI 56" → "buying pressure is balanced, room to run"
+  - Instead of "EMA20" → "20-day average price"
+  - Instead of "12% below 52-week high" → "12% cheaper than its yearly peak"
+- 2-3 sentences total. Direct. Confident. No "may", "could", "potentially" hedging.
+- If a fund holds it, mention that — "Top funds like X are already holding it" adds trust.
+- Do not output disclaimers, "consult a financial advisor", ratings, or price targets.
 
-THESIS:"""
+PLAIN-ENGLISH THESIS:"""
 
 
-MARKET_READ_TEMPLATE = """You are writing the daily market read for a quant equity dashboard. 2-3 sentences.
+MARKET_READ_TEMPLATE = """You are writing the daily market summary for a retail investor who doesn't follow markets daily. 2-3 sentences.
 
 Today's snapshot: {snapshot_date}
-Universe scanned: {tickers_scanned} tickers
-Lane distribution: {lane_counts_json}
-Sector momentum (top 3): {top_3_sectors}
-Sector momentum (bottom 3): {bottom_3_sectors}
+Stocks scanned: {tickers_scanned}
+Pick distribution by category: {lane_counts_json}
+Sectors with strongest momentum (top 3): {top_3_sectors}
+Sectors that are weakest (bottom 3): {bottom_3_sectors}
 
 CRITICAL RULES:
-- Use ONLY the numbers above. Do not invent index moves, FII flows, or news.
-- Explain the regime: are stocks broadly oversold, momentum-heavy, mixed?
-- Mention 1-2 sector names (use the actual names from the data).
-- 2-3 sentences max. Direct prose. No bullet points.
+- Use ONLY the numbers above. NEVER invent index moves, news, FII flows, or events.
+- Write like you're texting a friend who isn't a trader. NO jargon — say "stocks selling off heavily" not "broadly oversold". Say "moving up fast" not "momentum-heavy".
+- Explain the regime in plain words: are most stocks beaten down? Running hot? Mixed?
+- Name 1-2 sectors using the names provided.
+- 2-3 sentences max. Direct prose. No bullet points or disclaimers.
 
-MARKET READ:"""
+PLAIN-ENGLISH MARKET READ:"""
 
 
 def _format_mf_context(mf_context: dict[str, Any] | None) -> str:

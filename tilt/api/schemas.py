@@ -168,6 +168,37 @@ class RecommendationsResponse(BaseModel):
     data_mode: str = "snapshot"  # "snapshot" | "live"
 
 
+class FundBlurbSchema(BaseModel):
+    short_name: str
+    rank_blurb: str | None = None
+    aum_cr: float | None = None
+    cagr_5y: float | None = None
+    category: str | None = None
+
+
+class ProjectionHorizonSchema(BaseModel):
+    label: str
+    projected_value: float
+
+
+class LumpSumProjectionSchema(BaseModel):
+    default_investment: float
+    horizons: list[ProjectionHorizonSchema]
+
+
+class SipProjectionSchema(BaseModel):
+    default_monthly: float
+    horizons: list[ProjectionHorizonSchema]
+
+
+class ProjectionsSchema(BaseModel):
+    trailing_cagr_pct: float
+    trailing_period: str
+    lump_sum: LumpSumProjectionSchema
+    sip: SipProjectionSchema
+    disclaimer: str
+
+
 class BriefPickSchema(BaseModel):
     ticker: str
     name: str
@@ -184,6 +215,8 @@ class BriefPickSchema(BaseModel):
     thesis: str | None = None
     thesis_short: str | None = None
     why_this: str | None = None
+    fund_blurbs: list[FundBlurbSchema] | None = None
+    projections: ProjectionsSchema | None = None
 
 
 class ScanStatsSchema(BaseModel):

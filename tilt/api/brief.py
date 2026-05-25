@@ -21,9 +21,10 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any
 
+from tilt.api.projections import compute_stock_projections
 from tilt.api.recommendations import Recommendation, build_recommendation
 from tilt.api.service import ScanService, UniverseSnapshot
-from tilt.funds import MutualFund, load_mf_holdings, smart_money_context
+from tilt.funds import MutualFund, get_fund_meta, load_mf_holdings, smart_money_context
 from tilt.llm import (
     LLMProvider,
     build_market_read_prompt,
@@ -55,6 +56,8 @@ class BriefPick:
     thesis: str | None = None  # full 3-sentence thesis (hero only)
     thesis_short: str | None = None  # 1-sentence thesis (supporting picks)
     why_this: str | None = None  # exclusivity line (hero only)
+    fund_blurbs: list[dict[str, Any]] | None = None  # credibility callouts for each MF
+    projections: dict[str, Any] | None = None  # lump-sum + SIP projections
 
 
 @dataclass(frozen=True)
@@ -73,12 +76,66 @@ class Brief:
     data_mode: str  # "snapshot" | "live"
 
 
+def _fund_blurbs_for(mf_context: dict[str, Any] | None) -> list[dict[str, Any]] | None:
+    """Look up credibility metadata for each MF holding the stock.
+
+    Returns a list of {short_name, rank_blurb, aum_cr, cagr_5y, category}
+    dicts, or None if no MF context. Lets the frontend show
+    'Quant Active: India's #1 multi-cap fund by 5-year returns. 32.7% CAGR.'
+    """
+    if not mf_context:
+        return None
+    names = mf_context.get("fund_short_names") or []
+    if not names:
+        return None
+    blurbs: list[dict[str, Any]] = []
+    for name in names:
+        meta = get_fund_meta(name)
+        if meta is None:
+            blurbs.append({"short_name": name, "rank_blurb": None, "aum_cr": None, "cagr_5y": None, "category": None})
+        else:
+            blurbs.append({"short_name": name, **meta})
+    return blurbs
+
+
+def _projections_for(close, snapshot_date: str, ticker: str) -> dict[str, Any]:
+    """Serialize lump-sum + SIP projections to a dict the API can return."""
+    proj = compute_stock_projections(ticker, close, snapshot_date)
+    return {
+        "trailing_cagr_pct": round(proj.trailing_cagr * 100, 2),
+        "trailing_period": proj.trailing_period_label,
+        "lump_sum": {
+            "default_investment": 30000,
+            "horizons": [
+                {
+                    "label": h.label,
+                    "projected_value": round(h.projected_value, 0),
+                }
+                for h in proj.lump_sum_horizons
+            ],
+        },
+        "sip": {
+            "default_monthly": 5000,
+            "horizons": [
+                {
+                    "label": h.label,
+                    "projected_value": round(h.projected_value, 0),
+                }
+                for h in proj.sip_horizons
+            ],
+        },
+        "disclaimer": proj.disclaimer,
+    }
+
+
 def _recommendation_to_pick(
     rec: Recommendation,
     *,
     thesis: str | None = None,
     thesis_short: str | None = None,
     why_this: str | None = None,
+    fund_blurbs: list[dict[str, Any]] | None = None,
+    projections: dict[str, Any] | None = None,
 ) -> BriefPick:
     return BriefPick(
         ticker=rec.ticker,
@@ -96,6 +153,8 @@ def _recommendation_to_pick(
         thesis=thesis,
         thesis_short=thesis_short,
         why_this=why_this,
+        fund_blurbs=fund_blurbs,
+        projections=projections,
     )
 
 
@@ -243,6 +302,10 @@ def compose_brief(
             hero_rec,
             thesis=hero_thesis,
             why_this=why_this,
+            fund_blurbs=_fund_blurbs_for(hero_rec.mf_context),
+            projections=_projections_for(
+                snapshot.closes[hero_rec.ticker], snapshot_date, hero_rec.ticker
+            ),
         )
 
         supporting_recs = _select_supporting(recommendations, hero_rec.ticker, limit=SUPPORTING_MAX)
@@ -268,7 +331,16 @@ def compose_brief(
                 snapshot_date=snapshot_date,
                 short=True,
             )
-            supporting_picks.append(_recommendation_to_pick(rec, thesis_short=thesis_short))
+            supporting_picks.append(
+                _recommendation_to_pick(
+                    rec,
+                    thesis_short=thesis_short,
+                    fund_blurbs=_fund_blurbs_for(rec.mf_context),
+                    projections=_projections_for(
+                        snapshot.closes[rec.ticker], snapshot_date, rec.ticker
+                    ),
+                )
+            )
 
     market_prompt = build_market_read_prompt(
         snapshot_date=snapshot_date,
