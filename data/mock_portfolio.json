@@ -1,0 +1,14 @@
+{
+  "holdings": [
+    { "ticker": "RELIANCE", "quantity": 50, "avg_buy_price": 2450.00 },
+    { "ticker": "TCS", "quantity": 25, "avg_buy_price": 3850.00 },
+    { "ticker": "HDFCBANK", "quantity": 100, "avg_buy_price": 1680.00 },
+    { "ticker": "TATAPOWER", "quantity": 200, "avg_buy_price": 220.00 },
+    { "ticker": "INFY", "quantity": 75, "avg_buy_price": 1520.00 },
+    { "ticker": "TITAN", "quantity": 30, "avg_buy_price": 3200.00 },
+    { "ticker": "MARUTI", "quantity": 15, "avg_buy_price": 11500.00 },
+    { "ticker": "ITC", "quantity": 250, "avg_buy_price": 425.00 },
+    { "ticker": "SUNPHARMA", "quantity": 60, "avg_buy_price": 1750.00 }
+  ],
+  "cash": 25000.00
+}

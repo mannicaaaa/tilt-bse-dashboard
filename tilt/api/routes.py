@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 import time
 from datetime import UTC, datetime
 from pathlib import Path
@@ -28,7 +29,11 @@ from tilt.api.schemas import (
 from tilt.api.service import ScanService, build_snapshot
 from tilt.data import DataFetcher, ParquetCache, YFinanceProvider
 from tilt.data.bhavcopy_provider import BhavcopyProvider
-from tilt.portfolio import EmptyPortfolioProvider, PortfolioProvider
+from tilt.portfolio import (
+    EmptyPortfolioProvider,
+    MockPortfolioProvider,
+    PortfolioProvider,
+)
 from tilt.signals import (
     evaluate_averaging,
     evaluate_rally,
@@ -55,9 +60,23 @@ def get_data_fetcher() -> DataFetcher:
 
 
 def get_portfolio_provider() -> PortfolioProvider:
+    """Pick the portfolio provider from ``PORTFOLIO_PROVIDER`` env var.
+
+    - ``mock`` (default) — reads ``data/mock_portfolio.json``.
+    - ``empty`` — returns no holdings (used by tests + empty-state demos).
+    - ``groww`` — live Groww API (lands at step 17, not yet implemented).
+    """
     global _portfolio_provider
     if _portfolio_provider is None:
-        _portfolio_provider = EmptyPortfolioProvider()
+        choice = os.getenv("PORTFOLIO_PROVIDER", "mock").lower()
+        if choice == "empty":
+            _portfolio_provider = EmptyPortfolioProvider()
+        elif choice == "groww":
+            raise NotImplementedError(
+                "GrowwPortfolioProvider lands at step 17. Set PORTFOLIO_PROVIDER=mock."
+            )
+        else:
+            _portfolio_provider = MockPortfolioProvider()
     return _portfolio_provider
 
 
