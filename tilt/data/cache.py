@@ -22,12 +22,15 @@ up on the next refresh of the affected ticker.
 
 from __future__ import annotations
 
+import logging
 from datetime import date
 from pathlib import Path
 
 import pandas as pd
 
 from tilt.data.provider import OHLCV_COLUMNS
+
+log = logging.getLogger(__name__)
 
 
 class ParquetCache:
@@ -40,6 +43,23 @@ class ParquetCache:
     def _path(self, ticker: str) -> Path:
         return self.root / f"{ticker.upper()}.parquet"
 
+    def _safe_read(self, path: Path) -> pd.DataFrame | None:
+        """Read a parquet, deleting the file if it's corrupted.
+
+        Render's free tier kills processes aggressively (memory, idle timeout)
+        and can leave half-written parquets on disk. A subsequent read of a
+        truncated file raises ``pyarrow.lib.ArrowInvalid`` and would 500 the
+        entire request — turning a transient write interruption into a
+        permanent service outage. Treat any read error as a cache miss,
+        nuke the bad file, and let the fetcher fall through to providers.
+        """
+        try:
+            return pd.read_parquet(path)
+        except Exception as e:
+            log.warning("Corrupted parquet at %s — deleting and treating as miss (%s)", path, e)
+            path.unlink(missing_ok=True)
+            return None
+
     def get(self, ticker: str, start: date, end: date) -> pd.DataFrame | None:
         """Return cached OHLCV in ``[start, end]`` iff the cache fully covers it.
 
@@ -50,15 +70,15 @@ class ParquetCache:
         Indian-market holidays inside the range will cause harmless re-fetches
         the first time they're crossed; not worth a holiday-calendar dep for.
 
-        Returns None on any of: file missing, file empty, range not fully
-        covered. The fetcher treats None as a cache miss and falls through
-        to providers.
+        Returns None on any of: file missing, file empty, file corrupted
+        (deleted on the fly), range not fully covered. The fetcher treats
+        None as a cache miss and falls through to providers.
         """
         path = self._path(ticker)
         if not path.exists():
             return None
-        df = pd.read_parquet(path)
-        if df.empty:
+        df = self._safe_read(path)
+        if df is None or df.empty:
             return None
 
         expected = pd.bdate_range(start, end)
@@ -73,6 +93,11 @@ class ParquetCache:
     def put(self, ticker: str, df: pd.DataFrame) -> None:
         """Merge ``df`` into the cache for ``ticker``.
 
+        Atomic write: serialize to a sibling ``.tmp`` file, then rename onto
+        the real path. POSIX ``rename`` is atomic, so a process kill during
+        the write can leave a stray ``.tmp`` but never a truncated final
+        parquet — which is what was 500-ing Render previously.
+
         On collision (same date in both new and existing), the new row wins —
         this matters for retroactive corp-action adjustments.
         """
@@ -80,12 +105,23 @@ class ParquetCache:
             return
         path = self._path(ticker)
         if path.exists():
-            existing = pd.read_parquet(path)
-            combined = pd.concat([existing, df])
-            combined = combined[~combined.index.duplicated(keep="last")].sort_index()
+            existing = self._safe_read(path)
+            if existing is not None and not existing.empty:
+                combined = pd.concat([existing, df])
+                combined = combined[~combined.index.duplicated(keep="last")].sort_index()
+            else:
+                combined = df.sort_index()
         else:
             combined = df.sort_index()
-        combined[list(OHLCV_COLUMNS)].to_parquet(path)
+
+        tmp_path = path.with_suffix(".parquet.tmp")
+        try:
+            combined[list(OHLCV_COLUMNS)].to_parquet(tmp_path)
+            tmp_path.replace(path)
+        except Exception:
+            # Clean up partial tmp before re-raising so we don't leave debris.
+            tmp_path.unlink(missing_ok=True)
+            raise
 
     def clear(self, ticker: str | None = None) -> None:
         """Delete cached parquet for one ticker, or all tickers if None."""
