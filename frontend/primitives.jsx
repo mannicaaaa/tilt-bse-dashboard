@@ -352,14 +352,14 @@ const LaneSection = ({ lane, count, defaultOpen = false, children }) => {
 };
 
 // ---- EmptyLaneState ----
-const EmptyLaneState = ({ lane }) => (
+const EmptyLaneState = ({ lane, reason }) => (
   <div className="border border-dashed border-line-strong rounded-card p-8 text-center bg-ink-800/40">
     <div className="w-10 h-10 mx-auto rounded-full bg-ink-700 border border-line inline-flex items-center justify-center text-fg-muted">
       <Icon.Radar size={18} />
     </div>
     <div className="mt-3 text-[13px] font-medium text-fg">No {lane.label.toLowerCase()} setups today</div>
-    <div className="mt-1 text-[12px] text-fg-muted max-w-sm mx-auto leading-relaxed">
-      No stocks matching this strategy in the current scan window. Try again after the next refresh.
+    <div className="mt-1 text-[12px] text-fg-muted max-w-xl mx-auto leading-relaxed">
+      {reason || "No stocks matching this strategy in the current scan window. Try again after the next refresh."}
     </div>
   </div>
 );

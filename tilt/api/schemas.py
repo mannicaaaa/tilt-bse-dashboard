@@ -163,6 +163,7 @@ class RecommendationsResponse(BaseModel):
     counts: dict[str, int]  # {"strong": N, "momentum": N, "value": N, "smart_money": N}
     cards: list[RecommendationCard]
     tracked_funds: list[str] = []  # short names of MFs whose holdings were scanned
+    lane_reasons: dict[str, str] = {}  # lane_id → "why empty" plain-English explanation
 
 
 class RefreshResponse(BaseModel):

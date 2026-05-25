@@ -10,6 +10,7 @@ from pathlib import Path
 from fastapi import APIRouter, Depends, HTTPException, Query
 
 from tilt import __version__
+from tilt.api.diagnostics import compute_universe_stats, explain_empty_lane
 from tilt.api.recommendations import build_recommendation
 from tilt.api.schemas import (
     BacktestMetrics,
@@ -39,6 +40,7 @@ from tilt.portfolio import (
     MockPortfolioProvider,
     PortfolioProvider,
 )
+from tilt.signals import build_snapshot as _build_snap
 from tilt.signals import (
     evaluate_averaging,
     evaluate_rally,
@@ -157,10 +159,21 @@ def scan_recommendations(svc: ScanService = Depends(get_scan_service)) -> Recomm
     snapshot, _ = svc.refresh()
     funds = load_mf_holdings()
     cards: list[RecommendationCard] = []
+    # Collect snapshots for diagnostics — same compute as build_recommendation
+    # but we hold onto them to compute universe-wide stats for empty-state reasons.
+    diag_snaps: list[tuple] = []
     for ticker, close in snapshot.closes.items():
         sector_ranking = snapshot.sector_by_ticker.get(ticker)
         if sector_ranking is None:
             continue
+        # Pre-build snapshot for diagnostics (re-built inside build_recommendation —
+        # tiny duplication, kept for clarity).
+        try:
+            snap = _build_snap(close)
+            cmp_val = float(close.iloc[-1])
+            diag_snaps.append((snap, cmp_val))
+        except Exception:
+            pass
         mf_ctx = smart_money_context(ticker, funds)
         rec = build_recommendation(
             ticker=ticker,
@@ -198,6 +211,15 @@ def scan_recommendations(svc: ScanService = Depends(get_scan_service)) -> Recomm
         "value": sum(1 for c in cards if c.lane == "value"),
         "smart_money": sum(1 for c in cards if c.lane == "smart_money"),
     }
+
+    # For each empty lane, generate a plain-English "why" from universe stats.
+    stats = compute_universe_stats(diag_snaps)
+    mf_tracked_count = sum(len(f.holdings) for f in funds)
+    lane_reasons: dict[str, str] = {}
+    for lane_id, count in counts.items():
+        if count == 0:
+            lane_reasons[lane_id] = explain_empty_lane(lane_id, stats, mf_tracked=mf_tracked_count)
+
     now = datetime.now(UTC)
     return RecommendationsResponse(
         generated_at=now,
@@ -205,6 +227,7 @@ def scan_recommendations(svc: ScanService = Depends(get_scan_service)) -> Recomm
         counts=counts,
         cards=cards,
         tracked_funds=[f.short_name for f in funds],
+        lane_reasons=lane_reasons,
     )
 
 
