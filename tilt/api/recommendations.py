@@ -1,4 +1,4 @@
-"""3-lane recommendation builder — Strong / Momentum / Value.
+"""4-lane recommendation builder — Strong / Momentum / Value / Smart Money.
 
 Output shape feeds the Today's-Picks screen of the v2 frontend. Each
 recommendation card carries human-readable pros + cons derived directly from
@@ -8,15 +8,18 @@ generates the language.
 
 Lane definitions (locked, surface as plain-English in the UI):
 
-- **strong**   — Passes all 4 strict Rally conditions. The clean entry.
-- **momentum** — MACD histogram positive + above EMA20 + RSI ≥ 50.
-                 Already moving; later but still a valid entry.
-- **value**    — RSI < 35 + ≥ 10% below 52-week high.
-                 Oversold contrarian bet, longer hold horizon.
+- **strong**       — Passes all 4 strict Rally conditions. The clean entry.
+- **momentum**     — MACD histogram positive + above EMA20 + RSI ≥ 50.
+                     Already moving; later but still a valid entry.
+- **value**        — RSI < 35 + ≥ 10% below 52-week high.
+                     Oversold contrarian bet, longer hold horizon.
+- **smart_money**  — Held by ≥ 1 tracked Indian MF AND passes ≥ 1 loose
+                     technical condition (positive MACD, oversold, or value
+                     gap intact). Fund conviction + entry-timing sanity check.
 
-A stock can only land in **one** lane — strong wins over momentum wins over
-value. This keeps the Today's-Picks screen clear: each card sits in exactly
-one column.
+A stock can only land in **one** lane. Priority: strong > momentum > value >
+smart_money. So a "strong" pick that's also in MF holdings stays in strong;
+the MF context appears as a badge on every card, independent of lane.
 """
 
 from __future__ import annotations
@@ -25,6 +28,7 @@ from dataclasses import dataclass
 
 import pandas as pd
 
+from tilt.funds import MFContext
 from tilt.signals import (
     RALLY_MACD_CROSSOVER_WINDOW,
     RALLY_MIN_52W_GAP,
@@ -41,6 +45,9 @@ MOMENTUM_RSI_MIN = 50.0
 VALUE_RSI_MAX = 35.0
 VALUE_MIN_52W_GAP = 0.10
 
+# Smart Money lane thresholds — loosest technical sanity-check.
+SMART_MONEY_MIN_52W_GAP = 0.10
+
 
 @dataclass(frozen=True)
 class Recommendation:
@@ -48,7 +55,7 @@ class Recommendation:
     name: str
     cmp: float
     score: float
-    lane: str  # 'strong' | 'momentum' | 'value'
+    lane: str  # 'strong' | 'momentum' | 'value' | 'smart_money'
     sector: str
     sector_id: str
     sector_tag: str
@@ -56,12 +63,20 @@ class Recommendation:
     score_breakdown: dict[str, float]
     pros: list[str]
     cons: list[str]
+    mf_context: dict | None = None  # populated when ≥1 tracked MF holds the ticker
 
 
-def assign_lane(snap: IndicatorSnapshot, cmp: float) -> str | None:
+def assign_lane(
+    snap: IndicatorSnapshot,
+    cmp: float,
+    mf_ctx: MFContext | None = None,
+) -> str | None:
     """Return the lane a stock belongs in, or None if it qualifies for none.
 
-    Strong > Momentum > Value (single-lane assignment).
+    Priority: Strong > Momentum > Value > Smart Money. A stock held by a
+    tracked MF that also passes a strict lane stays in its strict lane (the
+    technical signal is the dominant story); the MF info appears as context
+    on the card, not as the lane assignment.
     """
     # Strong: all 4 Rally conditions
     if (
@@ -80,6 +95,17 @@ def assign_lane(snap: IndicatorSnapshot, cmp: float) -> str | None:
     # Value: oversold + value gap intact
     if snap.rsi < VALUE_RSI_MAX and snap.pct_below_52w_high >= VALUE_MIN_52W_GAP:
         return "value"
+
+    # Smart Money: tracked MF holds it AND passes at least one loose
+    # technical sanity check.
+    if mf_ctx is not None:
+        passes_loose_check = (
+            snap.macd_hist > 0
+            or snap.rsi < VALUE_RSI_MAX
+            or snap.pct_below_52w_high >= SMART_MONEY_MIN_52W_GAP
+        )
+        if passes_loose_check:
+            return "smart_money"
 
     return None
 
@@ -109,6 +135,8 @@ def derive_pros(snap: IndicatorSnapshot, cmp: float, lane: str) -> list[str]:
         pros.append(f"RSI {snap.rsi:.0f} — clearly oversold")
     elif lane == "momentum" and snap.rsi >= MOMENTUM_RSI_MIN:
         pros.append(f"RSI {snap.rsi:.0f} — strong upside momentum")
+    elif lane == "smart_money":
+        pros.append(f"RSI {snap.rsi:.0f}")
 
     if snap.pct_below_52w_high >= RALLY_MIN_52W_GAP:
         pct = snap.pct_below_52w_high * 100.0
@@ -149,6 +177,12 @@ def derive_cons(snap: IndicatorSnapshot, cmp: float, sector_tag: str, lane: str)
         # Strong lane is by definition clean; cons are subtle
         if snap.pct_below_52w_high > 0.25:
             cons.append("Far from 52w high — may signal extended weakness")
+    elif lane == "smart_money":
+        # Smart Money picks pass the loosest filter — call out what's weak
+        if snap.macd_hist < 0:
+            cons.append("MACD still negative — funds may be early")
+        if snap.rsi > 65:
+            cons.append(f"RSI {snap.rsi:.0f} — already running hot")
 
     return cons[:3]  # cap at 3 cons
 
@@ -161,17 +195,39 @@ def build_recommendation(
     sector_id: str,
     sector_tag: str,
     sector_strength: float,
+    mf_ctx: MFContext | None = None,
 ) -> Recommendation | None:
-    """Compute snapshot, assign lane, derive pros/cons. None if no lane fits."""
+    """Compute snapshot, assign lane, derive pros/cons. None if no lane fits.
+
+    ``mf_ctx`` (if provided) enables the smart_money lane fallback AND
+    attaches MF metadata to the card regardless of which lane the stock
+    ends up in.
+    """
     from tilt.signals.score import build_score
 
     snap = build_snapshot(close)
     cmp = float(close.iloc[-1])
-    lane = assign_lane(snap, cmp)
+    lane = assign_lane(snap, cmp, mf_ctx=mf_ctx)
     if lane is None:
         return None
 
     breakdown = build_score(snap, cmp, sector_strength)
+
+    mf_context_dict: dict | None = None
+    if mf_ctx is not None:
+        mf_context_dict = {
+            "funds_count": mf_ctx.funds_count,
+            "fund_short_names": list(mf_ctx.fund_short_names),
+            "smart_money_cr": mf_ctx.smart_money_cr,
+        }
+
+    pros = derive_pros(snap, cmp, lane)
+    if mf_ctx is not None and lane != "smart_money":
+        # Tag MF conviction as a pro on any lane card it's relevant for.
+        pros.append(
+            f"Held by {mf_ctx.funds_count} tracked MF{'s' if mf_ctx.funds_count != 1 else ''}"
+        )
+
     return Recommendation(
         ticker=ticker,
         name=name,
@@ -194,6 +250,7 @@ def build_recommendation(
             "rsi": round(breakdown.rsi, 4),
             "sector": round(breakdown.sector, 4),
         },
-        pros=derive_pros(snap, cmp, lane),
+        pros=pros[:5],  # cap at 5 since we may have added MF pro
         cons=derive_cons(snap, cmp, sector_tag, lane),
+        mf_context=mf_context_dict,
     )

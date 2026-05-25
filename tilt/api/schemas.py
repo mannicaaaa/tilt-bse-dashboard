@@ -135,12 +135,18 @@ class BacktestResponse(BaseModel):
     metrics: BacktestMetrics
 
 
+class MFContextSchema(BaseModel):
+    funds_count: int
+    fund_short_names: list[str]
+    smart_money_cr: float
+
+
 class RecommendationCard(BaseModel):
     ticker: str
     name: str
     cmp: float
     score: float
-    lane: str  # 'strong' | 'momentum' | 'value'
+    lane: str  # 'strong' | 'momentum' | 'value' | 'smart_money'
     sector: str
     sector_id: str
     sector_tag: str
@@ -148,13 +154,15 @@ class RecommendationCard(BaseModel):
     score_breakdown: dict[str, float]
     pros: list[str]
     cons: list[str]
+    mf_context: MFContextSchema | None = None
 
 
 class RecommendationsResponse(BaseModel):
     generated_at: datetime
     stale_after: datetime
-    counts: dict[str, int]  # {"strong": N, "momentum": N, "value": N}
+    counts: dict[str, int]  # {"strong": N, "momentum": N, "value": N, "smart_money": N}
     cards: list[RecommendationCard]
+    tracked_funds: list[str] = []  # short names of MFs whose holdings were scanned
 
 
 class RefreshResponse(BaseModel):

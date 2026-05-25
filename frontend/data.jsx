@@ -39,6 +39,14 @@ const V2_LANES = [
     blurb: 'Sold off heavily. Contrarian entry — needs patience, but recoveries can be large.',
     filterPlain: 'These stocks have fallen far enough that they look oversold and the price has plenty of catch-up to do. Trend has not turned yet, so it is a contrarian, longer-hold bet.',
   },
+  {
+    id: 'smart_money',
+    label: 'Smart money is buying',
+    accent: '#A78BFA',
+    accentClass: 'lane-smart',
+    blurb: 'Held by top Indian mutual funds and passing at least one technical sanity check.',
+    filterPlain: 'These are stocks that top mutual funds hold in their portfolios. The funds did the fundamental research; we only show the ones that also look reasonable on technicals — positive momentum, oversold, or sitting on a clear discount to their yearly high.',
+  },
 ];
 
 // Top Indian equity funds with their largest holdings. Hand-curated snapshot —

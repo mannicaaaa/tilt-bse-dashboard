@@ -28,8 +28,9 @@ data/*.parquet
 data/*.db
 data/*.sqlite
 
-# Keep tracked: mock portfolio + .gitkeep
+# Keep tracked: mock portfolio + MF holdings CSV + .gitkeep
 !data/mock_portfolio.json
+!data/mutual_fund_holdings.csv
 !data/.gitkeep
 
 # OS

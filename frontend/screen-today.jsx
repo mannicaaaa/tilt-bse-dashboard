@@ -75,8 +75,8 @@ const ScreenToday = ({ data, refreshing, lastRefreshedText, onRefresh, navigate,
 
   const sectorById = useMemo(() => Object.fromEntries(data.SECTORS.map((s) => [s.id, s])), [data]);
   const picksByLane = useMemo(() => {
-    const m = { strong: [], momentum: [], value: [] };
-    data.STOCKS.forEach((s) => { if (s.lane) m[s.lane].push(s); });
+    const m = { strong: [], momentum: [], value: [], smart_money: [] };
+    data.STOCKS.forEach((s) => { if (s.lane && m[s.lane]) m[s.lane].push(s); });
     return m;
   }, [data]);
   const pickedTickers = useMemo(
@@ -84,8 +84,9 @@ const ScreenToday = ({ data, refreshing, lastRefreshedText, onRefresh, navigate,
     [data]
   );
 
-  const totalPicks = picksByLane.strong.length + picksByLane.momentum.length + picksByLane.value.length;
-  const lanesWithPicks = ['strong','momentum','value'].filter((id) => picksByLane[id].length > 0).length;
+  const laneIds = ['strong', 'momentum', 'value', 'smart_money'];
+  const totalPicks = laneIds.reduce((acc, id) => acc + picksByLane[id].length, 0);
+  const lanesWithPicks = laneIds.filter((id) => picksByLane[id].length > 0).length;
 
   return (
     <div className="tilt-fade">
@@ -144,9 +145,11 @@ const ScreenToday = ({ data, refreshing, lastRefreshedText, onRefresh, navigate,
           const picks = picksByLane[lane.id];
           // Short tag label for the card (top-right corner)
           const shortLabel =
-            lane.id === 'strong'   ? 'Strong'   :
-            lane.id === 'momentum' ? 'Momentum' :
-                                     'Bargain';
+            lane.id === 'strong'       ? 'Strong'   :
+            lane.id === 'momentum'     ? 'Momentum' :
+            lane.id === 'value'        ? 'Bargain'  :
+            lane.id === 'smart_money'  ? 'MF Pick'  :
+                                         'Pick';
           return (
             <LaneSection key={lane.id} lane={lane} count={picks.length}>
               {picks.length === 0 ? (

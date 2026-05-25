@@ -1,0 +1,16 @@
+[
+  { "ticker": "CDSL", "name": "Central Depository Services (India) Ltd" },
+  { "ticker": "BSE", "name": "BSE Ltd" },
+  { "ticker": "MCX", "name": "Multi Commodity Exchange of India Ltd" },
+  { "ticker": "HDFCAMC", "name": "HDFC Asset Management Company Ltd" },
+  { "ticker": "360ONE", "name": "360 One WAM Ltd" },
+  { "ticker": "ANGELONE", "name": "Angel One Ltd" },
+  { "ticker": "AUBANK", "name": "AU Small Finance Bank Ltd" },
+  { "ticker": "POLICYBZR", "name": "PB Fintech Ltd" },
+  { "ticker": "MFSL", "name": "Max Financial Services Ltd" },
+  { "ticker": "BHEL", "name": "Bharat Heavy Electricals Ltd" },
+  { "ticker": "NAVINFLUOR", "name": "Naveen Fluorine International Ltd" },
+  { "ticker": "KARURVYSYA", "name": "Karur Vysya Bank Ltd" },
+  { "ticker": "NYKAA", "name": "FSN E-Commerce Ventures Ltd" },
+  { "ticker": "GLENMARK", "name": "Glenmark Pharmaceuticals Ltd" }
+]

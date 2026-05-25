@@ -94,13 +94,23 @@ def get_all_sectors() -> dict[str, list[StockInfo]]:
     return {name: get_sector(name) for name in SECTOR_NAMES}
 
 
-def get_universe() -> list[StockInfo]:
-    """Return the union of Nifty 500 + every sectoral constituent, dedup by ticker.
+def get_mf_extras() -> list[StockInfo]:
+    """Return tickers added to the universe specifically because top Indian MFs
+    hold them. Loaded from ``data/mf_extras.json`` (small, hand-curated set).
 
-    Some sectoral indices contain names outside the Nifty 500 (smaller banks,
-    PSUs, etc), so this union is strictly larger than ``get_nifty500()``. First
-    occurrence of a ticker wins for the ``name`` field, so the Nifty 500 file's
-    canonical names take precedence over sector-file copies.
+    These augment the Nifty 500 starter universe so the Smart Money lane has
+    real data to surface — many MF-favorite names (CDSL, BSE, BHEL, NYKAA,
+    etc.) aren't in our 47-name starter list.
+    """
+    return _load_json(_DATA_DIR / "mf_extras.json")
+
+
+def get_universe() -> list[StockInfo]:
+    """Return the union of Nifty 500 + every sectoral constituent + MF extras.
+
+    First occurrence of a ticker wins for the ``name`` field, so the Nifty
+    500 file's canonical names take precedence over sector-file copies and
+    over MF extras.
     """
     seen: dict[str, StockInfo] = {}
     for stock in get_nifty500():
@@ -108,4 +118,6 @@ def get_universe() -> list[StockInfo]:
     for sector_stocks in get_all_sectors().values():
         for stock in sector_stocks:
             seen.setdefault(stock.ticker, stock)
+    for stock in get_mf_extras():
+        seen.setdefault(stock.ticker, stock)
     return list(seen.values())

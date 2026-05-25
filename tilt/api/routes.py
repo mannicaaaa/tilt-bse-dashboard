@@ -15,6 +15,7 @@ from tilt.api.schemas import (
     BacktestMetrics,
     BacktestResponse,
     HealthResponse,
+    MFContextSchema,
     PortfolioHolding,
     PortfolioResponse,
     RecommendationCard,
@@ -32,6 +33,7 @@ from tilt.api.schemas import (
 from tilt.api.service import ScanService, build_snapshot
 from tilt.data import DataFetcher, ParquetCache, YFinanceProvider
 from tilt.data.bhavcopy_provider import BhavcopyProvider
+from tilt.funds import load_mf_holdings, smart_money_context
 from tilt.portfolio import (
     EmptyPortfolioProvider,
     MockPortfolioProvider,
@@ -145,17 +147,21 @@ def scan_rally_by_sector(
 
 @router.get("/scan/recommendations", response_model=RecommendationsResponse)
 def scan_recommendations(svc: ScanService = Depends(get_scan_service)) -> RecommendationsResponse:
-    """3-lane recommendations: Strong / Momentum / Value with pros & cons.
+    """4-lane recommendations: Strong / Momentum / Value / Smart Money.
 
-    Single-lane assignment per stock (Strong wins over Momentum over Value).
+    Single-lane assignment per stock (Strong > Momentum > Value > Smart Money).
     Pros and cons are derived from the indicator snapshot — no LLM.
+    MF context (funds holding, smart money exposure) attached to every card
+    where applicable, regardless of which lane the stock landed in.
     """
     snapshot, _ = svc.refresh()
+    funds = load_mf_holdings()
     cards: list[RecommendationCard] = []
     for ticker, close in snapshot.closes.items():
         sector_ranking = snapshot.sector_by_ticker.get(ticker)
         if sector_ranking is None:
             continue
+        mf_ctx = smart_money_context(ticker, funds)
         rec = build_recommendation(
             ticker=ticker,
             name=snapshot.name_by_ticker.get(ticker, ticker),
@@ -164,6 +170,7 @@ def scan_recommendations(svc: ScanService = Depends(get_scan_service)) -> Recomm
             sector_id=sector_ranking.sector_name,
             sector_tag=sector_ranking.tag,
             sector_strength=sector_ranking.momentum,
+            mf_ctx=mf_ctx,
         )
         if rec is None:
             continue
@@ -181,6 +188,7 @@ def scan_recommendations(svc: ScanService = Depends(get_scan_service)) -> Recomm
                 score_breakdown=rec.score_breakdown,
                 pros=rec.pros,
                 cons=rec.cons,
+                mf_context=MFContextSchema(**rec.mf_context) if rec.mf_context else None,
             )
         )
     cards.sort(key=lambda c: -c.score)
@@ -188,6 +196,7 @@ def scan_recommendations(svc: ScanService = Depends(get_scan_service)) -> Recomm
         "strong": sum(1 for c in cards if c.lane == "strong"),
         "momentum": sum(1 for c in cards if c.lane == "momentum"),
         "value": sum(1 for c in cards if c.lane == "value"),
+        "smart_money": sum(1 for c in cards if c.lane == "smart_money"),
     }
     now = datetime.now(UTC)
     return RecommendationsResponse(
@@ -195,6 +204,7 @@ def scan_recommendations(svc: ScanService = Depends(get_scan_service)) -> Recomm
         stale_after=now,
         counts=counts,
         cards=cards,
+        tracked_funds=[f.short_name for f in funds],
     )
 
 
