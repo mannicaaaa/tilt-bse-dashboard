@@ -2,9 +2,6 @@ services:
   - type: web
     name: tilt-api
     runtime: python
-    # Render's Python runtime auto-detects 3.x via the `python` line in
-    # requirements OR a runtime.txt file (which we ship). Pinning to 3.12
-    # matches our local dev env.
     plan: free
     region: oregon
     branch: main
@@ -13,6 +10,12 @@ services:
     healthCheckPath: /health
     autoDeploy: true
     envVars:
+      # PYTHON_VERSION pins the interpreter. Required because Render defaults
+      # to its newest installed Python (3.14 as of May 2026), and numba — a
+      # transitive dep of pandas-ta 0.4.x — only supports up to 3.13. The
+      # legacy `runtime.txt` file is ignored when a render.yaml is present.
+      - key: PYTHON_VERSION
+        value: 3.12.13
       - key: PORTFOLIO_PROVIDER
         value: mock
         # Switch to `groww` at step 17 after credentials are set on Render.
