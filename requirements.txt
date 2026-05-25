@@ -1,2 +1,12 @@
-# Tilt runtime dependencies — pinned as each implementation step lands them.
-# See docs/SPEC.md for the 19-step build order.
+# Tilt runtime dependencies.
+# pandas-ta 0.4.x is the Python 3.12-compatible line; it requires NumPy >= 2.2.
+# pandas >= 2.2 is the first pandas line with full NumPy 2 support.
+
+# --- Indicators (step 3) ---
+numpy>=2.2,<3.0
+pandas>=2.2,<3.0
+pandas-ta==0.4.71b0
+setuptools>=68.0
+
+# --- Test (step 3) ---
+pytest>=8.0

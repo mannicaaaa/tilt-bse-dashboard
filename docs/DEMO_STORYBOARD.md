@@ -19,7 +19,7 @@ Run through this in the 10 minutes BEFORE you hit record:
   5. `/scan/rally/conviction` JSON response
   6. `/stock/TATAPOWER` JSON response
   7. `/backtest/rally` POST response (pre-run, response cached in a tab)
-  8. The `indicators/test_rsi_macd.py` file on GitHub
+  8. The `tests/indicators/test_parity.py` file on GitHub
 - [ ] **Terminal closed.** No Claude Code window visible — that's a red flag (suggests "Claude did it, I didn't"). The artifacts speak for themselves.
 - [ ] **Notifications silenced** — Slack, Mail, system banners.
 - [ ] **Camera + mic tested** — quick 10s test in Loom, watch playback.
@@ -79,7 +79,7 @@ Run through this in the 10 minutes BEFORE you hit record:
 
 ### Beat 5 — Depth proof (2:10 → 2:40) · 30s
 
-**Visual:** Switch to `indicators/test_rsi_macd.py` on GitHub. Show the test file.
+**Visual:** Switch to `tests/indicators/test_parity.py` on GitHub. Show the test file.
 
 **Script:**
 
