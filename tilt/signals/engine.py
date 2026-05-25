@@ -43,14 +43,26 @@ class ScanInput:
 
 
 def build_snapshot(close: pd.Series) -> IndicatorSnapshot:
-    """Compute the indicator snapshot for the *latest* bar of ``close``."""
-    rsi_series = rsi(close, length=14)
-    macd_df = macd(close, fast=12, slow=26, signal=9)
-    ema20 = close.ewm(span=20, adjust=False).mean()
+    """Compute the indicator snapshot for the latest *valid* bar of ``close``.
 
-    cmp = float(close.iloc[-1])
-    window = min(_TRADING_DAYS_PER_YEAR, len(close))
-    high_52w = float(close.iloc[-window:].max())
+    yfinance can return a trailing NaN for the current (incomplete) trading
+    day. Naively reading ``close.iloc[-1]`` would propagate NaN into ``cmp``
+    and ``pct_below_52w_high``, which then breaks every lane filter that
+    uses ``cmp > ema20`` (NaN comparisons return False). Trim to the last
+    valid index before all latest-bar reads.
+    """
+    last_valid = close.last_valid_index()
+    if last_valid is None:
+        raise ValueError("close series has no valid (non-NaN) values")
+    close_trimmed = close.loc[:last_valid]
+
+    rsi_series = rsi(close_trimmed, length=14)
+    macd_df = macd(close_trimmed, fast=12, slow=26, signal=9)
+    ema20 = close_trimmed.ewm(span=20, adjust=False).mean()
+
+    cmp = float(close_trimmed.iloc[-1])
+    window = min(_TRADING_DAYS_PER_YEAR, len(close_trimmed))
+    high_52w = float(close_trimmed.iloc[-window:].max())
     pct_below = (high_52w - cmp) / high_52w if high_52w > 0 else 0.0
 
     macd_hist = macd_df["histogram"]
