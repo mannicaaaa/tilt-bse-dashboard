@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Tilt — Market Intelligence</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = {
+    darkMode: 'class',
+    theme: {
+      extend: {
+        fontFamily: {
+          sans: ['Inter', 'ui-sans-serif', 'system-ui'],
+          mono: ['JetBrains Mono', 'ui-monospace', 'monospace'],
+        },
+        colors: {
+          // Tilt palette
+          ink: {
+            900: '#0A0A0B', // app bg
+            800: '#101013',
+            700: '#16161A', // card bg
+            600: '#1C1C21',
+            500: '#23232A',
+            400: '#2D2D36',
+          },
+          line: {
+            DEFAULT: '#23232A',
+            soft: '#1C1C21',
+            strong: '#2D2D36',
+          },
+          fg: {
+            DEFAULT: '#F4F4F5',
+            muted: '#A1A1AA',
+            dim: '#71717A',
+            faint: '#52525B',
+          },
+          bull: { DEFAULT: '#22D3A4', soft: 'rgba(34,211,164,0.12)', ring: 'rgba(34,211,164,0.35)' },
+          bear: { DEFAULT: '#F87171', soft: 'rgba(248,113,113,0.12)', ring: 'rgba(248,113,113,0.35)' },
+          warn: { DEFAULT: '#FBBF24', soft: 'rgba(251,191,36,0.12)', ring: 'rgba(251,191,36,0.35)' },
+        },
+        borderRadius: {
+          card: '12px',
+        },
+        boxShadow: {
+          card: '0 1px 0 rgba(255,255,255,0.02) inset, 0 1px 2px rgba(0,0,0,0.6)',
+          lift: '0 8px 24px rgba(0,0,0,0.4), 0 2px 6px rgba(0,0,0,0.3)',
+        },
+        transitionDuration: { 150: '150ms' },
+      },
+    },
+  };
+</script>
+<style>
+  html, body { background: #0A0A0B; color: #F4F4F5; }
+  body { font-family: 'Inter', ui-sans-serif, system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
+  .mono { font-family: 'JetBrains Mono', ui-monospace, monospace; font-variant-numeric: tabular-nums; }
+
+  /* Scrollbars */
+  ::-webkit-scrollbar { width: 10px; height: 10px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: #2D2D36; border-radius: 8px; border: 2px solid #0A0A0B; }
+  ::-webkit-scrollbar-thumb:hover { background: #3a3a44; }
+
+  /* Light mode overrides */
+  html.light, html.light body { background: #FAFAFA; color: #18181B; }
+  html.light ::-webkit-scrollbar-thumb { background: #D4D4D8; border-color: #FAFAFA; }
+
+  /* Subtle fade for refresh */
+  @keyframes tiltFade { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+  .tilt-fade { animation: tiltFade 220ms ease-out both; }
+
+  @keyframes tiltSpin { to { transform: rotate(360deg); } }
+  .tilt-spin { animation: tiltSpin 0.9s linear infinite; }
+
+  @keyframes tiltPulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }
+  .tilt-pulse { animation: tiltPulse 1.6s ease-in-out infinite; }
+
+  /* Focus ring */
+  .ring-focus:focus-visible { outline: 2px solid #22D3A4; outline-offset: 2px; }
+
+  /* Disable Tailwind preflight on <table> baseline so our typography sits cleanly */
+  table { border-collapse: separate; border-spacing: 0; }
+</style>
+</head>
+<body class="font-sans">
+  <div id="root"></div>
+
+  <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
+  <!-- API base — set on window before scripts load to enable live mode. -->
+  <!-- <script>window.TILT_API_BASE = "https://tilt-api.onrender.com";</script> -->
+  <script src="api.js"></script>
+
+  <script type="text/babel" src="icons.jsx"></script>
+  <script type="text/babel" src="data.jsx"></script>
+  <script type="text/babel" src="primitives.jsx"></script>
+  <script type="text/babel" src="chrome.jsx"></script>
+  <script type="text/babel" src="screen-dashboard.jsx"></script>
+  <script type="text/babel" src="screen-portfolio.jsx"></script>
+  <script type="text/babel" src="screen-scan.jsx"></script>
+  <script type="text/babel" src="screen-stock.jsx"></script>
+  <script type="text/babel" src="screen-backtest.jsx"></script>
+  <script type="text/babel" src="tweaks-panel.jsx"></script>
+  <script type="text/babel" src="app.jsx"></script>
+</body>
+</html>
