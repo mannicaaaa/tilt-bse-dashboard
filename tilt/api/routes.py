@@ -10,12 +10,15 @@ from pathlib import Path
 from fastapi import APIRouter, Depends, HTTPException, Query
 
 from tilt import __version__
+from tilt.api.recommendations import build_recommendation
 from tilt.api.schemas import (
     BacktestMetrics,
     BacktestResponse,
     HealthResponse,
     PortfolioHolding,
     PortfolioResponse,
+    RecommendationCard,
+    RecommendationsResponse,
     RefreshResponse,
     ScanBySectorResponse,
     ScanResponse,
@@ -137,6 +140,61 @@ def scan_rally_by_sector(
         generated_at=now,
         stale_after=now,
         sectors={k: [to_scan_result(r) for r in v] for k, v in bucketed.items()},
+    )
+
+
+@router.get("/scan/recommendations", response_model=RecommendationsResponse)
+def scan_recommendations(svc: ScanService = Depends(get_scan_service)) -> RecommendationsResponse:
+    """3-lane recommendations: Strong / Momentum / Value with pros & cons.
+
+    Single-lane assignment per stock (Strong wins over Momentum over Value).
+    Pros and cons are derived from the indicator snapshot — no LLM.
+    """
+    snapshot, _ = svc.refresh()
+    cards: list[RecommendationCard] = []
+    for ticker, close in snapshot.closes.items():
+        sector_ranking = snapshot.sector_by_ticker.get(ticker)
+        if sector_ranking is None:
+            continue
+        rec = build_recommendation(
+            ticker=ticker,
+            name=snapshot.name_by_ticker.get(ticker, ticker),
+            close=close,
+            sector=sector_ranking.display_name,
+            sector_id=sector_ranking.sector_name,
+            sector_tag=sector_ranking.tag,
+            sector_strength=sector_ranking.momentum,
+        )
+        if rec is None:
+            continue
+        cards.append(
+            RecommendationCard(
+                ticker=rec.ticker,
+                name=rec.name,
+                cmp=rec.cmp,
+                score=rec.score,
+                lane=rec.lane,
+                sector=rec.sector,
+                sector_id=rec.sector_id,
+                sector_tag=rec.sector_tag,
+                indicators=rec.indicators,
+                score_breakdown=rec.score_breakdown,
+                pros=rec.pros,
+                cons=rec.cons,
+            )
+        )
+    cards.sort(key=lambda c: -c.score)
+    counts = {
+        "strong": sum(1 for c in cards if c.lane == "strong"),
+        "momentum": sum(1 for c in cards if c.lane == "momentum"),
+        "value": sum(1 for c in cards if c.lane == "value"),
+    }
+    now = datetime.now(UTC)
+    return RecommendationsResponse(
+        generated_at=now,
+        stale_after=now,
+        counts=counts,
+        cards=cards,
     )
 
 

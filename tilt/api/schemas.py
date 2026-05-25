@@ -135,6 +135,28 @@ class BacktestResponse(BaseModel):
     metrics: BacktestMetrics
 
 
+class RecommendationCard(BaseModel):
+    ticker: str
+    name: str
+    cmp: float
+    score: float
+    lane: str  # 'strong' | 'momentum' | 'value'
+    sector: str
+    sector_id: str
+    sector_tag: str
+    indicators: dict[str, float]
+    score_breakdown: dict[str, float]
+    pros: list[str]
+    cons: list[str]
+
+
+class RecommendationsResponse(BaseModel):
+    generated_at: datetime
+    stale_after: datetime
+    counts: dict[str, int]  # {"strong": N, "momentum": N, "value": N}
+    cards: list[RecommendationCard]
+
+
 class RefreshResponse(BaseModel):
     refreshed_at: datetime
     duration_seconds: float

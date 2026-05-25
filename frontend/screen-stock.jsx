@@ -1,7 +1,8 @@
-// Screen 4 — Stock Detail
+// Screen 3 (v2) — Stock Detail
+// Carries over the v1 design; renames "Backtest cameo" → "How this strategy did historically"
 
-const { Icon, fmt, Card, Button, IconChip, Tag, StatusBadge, IndicatorChip, indicatorTone, ScoreBar, PageHeader, SectionLabel } = window;
-const { useState, useMemo, useRef } = React;
+const { Icon, fmt, Card, Button, IconChip, Tag, SectorTag, StatusBadge, IndicatorChip, indicatorTone, ScoreBar, PageHeader } = window;
+const { useState, useMemo } = React;
 
 const RANGES = [
   { id: '1M', days: 21 },
@@ -12,81 +13,53 @@ const RANGES = [
   { id: '5Y', days: 252 },
 ];
 
-// EMA20 over closes
 const ema = (values, period) => {
-  const k = 2 / (period + 1);
-  const out = [];
-  values.forEach((v, i) => {
-    if (i === 0) out.push(v);
-    else out.push(v * k + out[i - 1] * (1 - k));
-  });
+  const k = 2 / (period + 1); const out = [];
+  values.forEach((v, i) => { out.push(i === 0 ? v : v * k + out[i - 1] * (1 - k)); });
   return out;
 };
-
-// MACD: 12-26 EMA difference + 9-period signal
 const macdLine = (closes) => {
-  const e12 = ema(closes, 12);
-  const e26 = ema(closes, 26);
+  const e12 = ema(closes, 12); const e26 = ema(closes, 26);
   const macd = closes.map((_, i) => e12[i] - e26[i]);
   const signal = ema(macd, 9);
   const hist = macd.map((v, i) => v - signal[i]);
   return { macd, signal, hist };
 };
-
-// RSI 14
 const rsi = (closes, period = 14) => {
-  let gains = 0, losses = 0;
-  const out = new Array(closes.length).fill(50);
+  let g = 0, l = 0; const out = new Array(closes.length).fill(50);
   for (let i = 1; i < closes.length; i++) {
-    const ch = closes[i] - closes[i - 1];
-    const g = Math.max(0, ch);
-    const l = Math.max(0, -ch);
-    if (i <= period) { gains += g; losses += l; out[i] = 50; continue; }
-    if (i === period + 1) { gains /= period; losses /= period; }
-    gains = (gains * (period - 1) + g) / period;
-    losses = (losses * (period - 1) + l) / period;
-    const rs = losses === 0 ? 100 : gains / losses;
-    out[i] = 100 - 100 / (1 + rs);
+    const ch = closes[i] - closes[i - 1]; const G = Math.max(0, ch), L = Math.max(0, -ch);
+    if (i <= period) { g += G; l += L; continue; }
+    if (i === period + 1) { g /= period; l /= period; }
+    g = (g * (period - 1) + G) / period; l = (l * (period - 1) + L) / period;
+    const rs = l === 0 ? 100 : g / l; out[i] = 100 - 100 / (1 + rs);
   }
   return out;
 };
 
-// Candlestick chart
 const CandlestickChart = ({ data, width = 800, height = 320, overlays }) => {
   const margin = { top: 10, right: 16, bottom: 24, left: 56 };
-  const w = width - margin.left - margin.right;
-  const h = height - margin.top - margin.bottom;
-
+  const w = width - margin.left - margin.right, h = height - margin.top - margin.bottom;
   const prices = data.flatMap((d) => [d.high, d.low]);
-  const min = Math.min(...prices) * 0.99;
-  const max = Math.max(...prices) * 1.01;
+  const min = Math.min(...prices) * 0.99, max = Math.max(...prices) * 1.01;
   const yScale = (v) => margin.top + h - ((v - min) / (max - min)) * h;
   const xStep = w / data.length;
   const candleW = Math.max(2, xStep * 0.65);
-
-  // EMA20 path
   const closes = data.map((d) => d.close);
   const ema20 = ema(closes, 20);
   const emaPath = ema20.map((v, i) => `${i === 0 ? 'M' : 'L'} ${margin.left + i * xStep + xStep / 2},${yScale(v)}`).join(' ');
-
-  // Y-axis ticks
   const ticks = 5;
   const yTicks = Array.from({ length: ticks + 1 }, (_, i) => min + (max - min) * (i / ticks));
-
-  // X-axis labels — show 5 evenly spaced
   const xLabels = [0, 0.25, 0.5, 0.75, 0.99].map((p) => Math.floor(p * (data.length - 1)));
 
   return (
     <svg width="100%" viewBox={`0 0 ${width} ${height}`} style={{ display: 'block' }}>
-      {/* grid */}
       {yTicks.map((v, i) => (
         <g key={i}>
           <line x1={margin.left} x2={width - margin.right} y1={yScale(v)} y2={yScale(v)} stroke="#23232A" strokeDasharray="2 4" />
           <text x={margin.left - 8} y={yScale(v) + 3} textAnchor="end" fontSize="10.5" fill="#71717A" fontFamily="JetBrains Mono">{v.toFixed(0)}</text>
         </g>
       ))}
-
-      {/* candles */}
       {data.map((d, i) => {
         const x = margin.left + i * xStep + xStep / 2;
         const up = d.close >= d.open;
@@ -94,35 +67,17 @@ const CandlestickChart = ({ data, width = 800, height = 320, overlays }) => {
         return (
           <g key={i}>
             <line x1={x} x2={x} y1={yScale(d.high)} y2={yScale(d.low)} stroke={color} strokeWidth="1" />
-            <rect
-              x={x - candleW / 2}
-              y={yScale(Math.max(d.open, d.close))}
-              width={candleW}
+            <rect x={x - candleW / 2} y={yScale(Math.max(d.open, d.close))} width={candleW}
               height={Math.max(1, Math.abs(yScale(d.open) - yScale(d.close)))}
-              fill={up ? 'rgba(34,211,164,0.85)' : 'rgba(248,113,113,0.85)'}
-              stroke={color}
-              strokeWidth="0.5"
-            />
+              fill={up ? 'rgba(34,211,164,0.85)' : 'rgba(248,113,113,0.85)'} stroke={color} strokeWidth="0.5" />
           </g>
         );
       })}
-
-      {/* EMA20 overlay */}
-      {overlays.ema20 && (
-        <path d={emaPath} fill="none" stroke="#FBBF24" strokeWidth="1.5" />
-      )}
-
-      {/* x labels */}
+      {overlays.ema20 && <path d={emaPath} fill="none" stroke="#FBBF24" strokeWidth="1.5" />}
       {xLabels.map((i, k) => {
         const x = margin.left + i * xStep + xStep / 2;
-        const monthOffset = data.length - i;
-        const date = new Date();
-        date.setDate(date.getDate() - monthOffset);
-        return (
-          <text key={k} x={x} y={height - 6} fontSize="10.5" fill="#71717A" textAnchor="middle" fontFamily="JetBrains Mono">
-            {date.toLocaleDateString('en-IN', { month: 'short', day: 'numeric' })}
-          </text>
-        );
+        const date = new Date(); date.setDate(date.getDate() - (data.length - i));
+        return <text key={k} x={x} y={height - 6} fontSize="10.5" fill="#71717A" textAnchor="middle" fontFamily="JetBrains Mono">{date.toLocaleDateString('en-IN', { month: 'short', day: 'numeric' })}</text>;
       })}
     </svg>
   );
@@ -130,8 +85,7 @@ const CandlestickChart = ({ data, width = 800, height = 320, overlays }) => {
 
 const MACDChart = ({ data, width = 800, height = 90 }) => {
   const margin = { top: 6, right: 16, bottom: 18, left: 56 };
-  const w = width - margin.left - margin.right;
-  const h = height - margin.top - margin.bottom;
+  const w = width - margin.left - margin.right, h = height - margin.top - margin.bottom;
   const closes = data.map((d) => d.close);
   const { macd, signal, hist } = macdLine(closes);
   const maxAbs = Math.max(...hist.map(Math.abs), ...macd.map(Math.abs)) * 1.1;
@@ -139,7 +93,6 @@ const MACDChart = ({ data, width = 800, height = 90 }) => {
   const xStep = w / data.length;
   const macdPath = macd.map((v, i) => `${i === 0 ? 'M' : 'L'} ${margin.left + i * xStep + xStep / 2},${yScale(v)}`).join(' ');
   const sigPath = signal.map((v, i) => `${i === 0 ? 'M' : 'L'} ${margin.left + i * xStep + xStep / 2},${yScale(v)}`).join(' ');
-
   return (
     <svg width="100%" viewBox={`0 0 ${width} ${height}`} style={{ display: 'block' }}>
       <text x={margin.left - 8} y={margin.top + 10} fontSize="10" fill="#71717A" textAnchor="end" fontFamily="JetBrains Mono">MACD</text>
@@ -159,18 +112,15 @@ const MACDChart = ({ data, width = 800, height = 90 }) => {
 
 const RSIChart = ({ data, width = 800, height = 80 }) => {
   const margin = { top: 6, right: 16, bottom: 18, left: 56 };
-  const w = width - margin.left - margin.right;
-  const h = height - margin.top - margin.bottom;
+  const w = width - margin.left - margin.right, h = height - margin.top - margin.bottom;
   const closes = data.map((d) => d.close);
   const r = rsi(closes);
   const yScale = (v) => margin.top + h - (v / 100) * h;
   const xStep = w / data.length;
   const path = r.map((v, i) => `${i === 0 ? 'M' : 'L'} ${margin.left + i * xStep + xStep / 2},${yScale(v)}`).join(' ');
-
   return (
     <svg width="100%" viewBox={`0 0 ${width} ${height}`} style={{ display: 'block' }}>
       <text x={margin.left - 8} y={margin.top + 10} fontSize="10" fill="#71717A" textAnchor="end" fontFamily="JetBrains Mono">RSI 14</text>
-      {/* Rally band 45-62 */}
       <rect x={margin.left} y={yScale(62)} width={w} height={yScale(45) - yScale(62)} fill="rgba(34,211,164,0.08)" />
       <line x1={margin.left} x2={width - margin.right} y1={yScale(62)} y2={yScale(62)} stroke="#22D3A4" strokeOpacity="0.4" strokeDasharray="2 3" />
       <line x1={margin.left} x2={width - margin.right} y1={yScale(45)} y2={yScale(45)} stroke="#22D3A4" strokeOpacity="0.4" strokeDasharray="2 3" />
@@ -183,54 +133,55 @@ const RSIChart = ({ data, width = 800, height = 80 }) => {
   );
 };
 
-const ScreenStock = ({ ticker, data, navigate }) => {
+const ScreenStock = ({ ticker, data, navigate, fromLane }) => {
   const [range, setRange] = useState('1Y');
   const [overlays, setOverlays] = useState({ ema20: true, macd: true, rsi: true });
   const [copied, setCopied] = useState(false);
-
   const stock = data.STOCKS.find((s) => s.ticker === ticker) || data.STOCKS[0];
   const sector = data.SECTORS.find((s) => s.id === stock.sectorId);
+  const lane = stock.lane || fromLane || 'strong';
+  const laneObj = data.LANES.find((l) => l.id === lane);
+  const strategyResult = data.STRATEGY_BACKTEST[lane];
 
   const rangeDays = RANGES.find((r) => r.id === range).days;
   const ohlc = data.STOCK_OHLC.slice(-rangeDays);
 
-  // Filter triggers — derive booleans from stock fields
   const triggers = [
     { label: 'MACD positive (> 0)', pass: stock.macd > 0, value: stock.macd.toFixed(2) },
     { label: 'RSI in rally band (45–62)', pass: stock.rsi >= 45 && stock.rsi <= 62, value: stock.rsi.toString() },
     { label: 'Price above EMA20', pass: stock.cmp > stock.ema20, value: `${fmt.num(stock.cmp)} > ${fmt.num(stock.ema20, 0)}` },
-    { label: '52W gap ≥ -10%', pass: stock.gap52 >= -10, value: `${stock.gap52.toFixed(1)}%` },
+    { label: '52W gap ≥ 10% below high', pass: stock.gap52 <= -10, value: `${stock.gap52.toFixed(1)}%` },
     { label: 'Sector state ≠ Cold', pass: sector && sector.state !== 'cold', value: sector ? sector.state.toUpperCase() : '—' },
   ];
 
-  const onCopy = () => {
-    navigator.clipboard?.writeText(stock.ticker);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 1500);
-  };
+  const onCopy = () => { navigator.clipboard?.writeText(stock.ticker); setCopied(true); setTimeout(() => setCopied(false), 1500); };
 
   return (
     <div className="tilt-fade">
-      {/* Back link */}
-      <button onClick={() => navigate('scan')} className="inline-flex items-center gap-1.5 text-[12px] text-fg-muted hover:text-fg mb-4 transition-colors">
-        <Icon.ArrowLeft size={14} />
-        Back to Scan
+      <button onClick={() => navigate('today')} className="inline-flex items-center gap-1.5 text-[12px] text-fg-muted hover:text-fg mb-4 transition-colors">
+        <Icon.ArrowLeft size={14} /> Back to Today's Picks
       </button>
 
       {/* Header card */}
-      <Card padding={false} className="mb-5">
+      <Card padding={false} className="mb-5" style={{ borderLeft: `2px solid ${laneObj?.accent || '#23232A'}` }}>
         <div className="p-6">
           <div className="flex items-start justify-between gap-6 flex-wrap">
-            <div>
+            <div className="min-w-0">
               <div className="flex items-center gap-3 flex-wrap">
                 <h1 className="mono text-[34px] font-bold text-fg tracking-tight leading-none">{stock.ticker}</h1>
                 <Tag tone="muted">NSE</Tag>
                 <span className="text-[14px] text-fg-muted">{stock.name}</span>
               </div>
-              <div className="mt-2 flex items-center gap-2 flex-wrap">
-                <Tag tone="info">{stock.sector}</Tag>
-                {sector && <StatusBadge status={sector.state} size="sm" />}
-                <span className="text-[11.5px] text-fg-dim mono">sector mom {sector?.momentum.toFixed(2)}</span>
+              <div className="mt-2.5 flex items-center gap-2 flex-wrap">
+                <SectorTag name={stock.sector} state={sector?.state || 'neutral'} />
+                {laneObj && (
+                  <span
+                    className="inline-flex items-center h-[22px] px-2 text-[11px] font-semibold uppercase tracking-wider rounded border"
+                    style={{ color: laneObj.accent, borderColor: laneObj.accent + '50', background: laneObj.accent + '12' }}
+                  >
+                    {laneObj.label}
+                  </span>
+                )}
               </div>
             </div>
 
@@ -245,20 +196,16 @@ const ScreenStock = ({ ticker, data, navigate }) => {
             </div>
           </div>
 
-          {/* Composite score */}
           <div className="mt-6 flex items-end gap-6 flex-wrap">
             <div>
               <div className="text-[11px] uppercase tracking-wider text-fg-dim font-medium">Composite score</div>
-              <div className={`mt-1 mono text-[32px] font-bold leading-none ${stock.score >= 0.75 ? 'text-bull' : stock.score >= 0.5 ? 'text-warn' : 'text-bear'}`}>
-                {fmt.score(stock.score)}
-              </div>
+              <div className={`mt-1 mono text-[32px] font-bold leading-none ${stock.score >= 0.75 ? 'text-bull' : stock.score >= 0.5 ? 'text-warn' : 'text-bear'}`}>{fmt.score(stock.score)}</div>
             </div>
             <div className="flex-1 min-w-[280px] max-w-[480px]">
               <ScoreBar parts={stock.scoreParts} width="100%" height={10} showLegend />
             </div>
           </div>
 
-          {/* Action chips */}
           <div className="mt-6 flex items-center gap-2 flex-wrap">
             <Button variant="secondary" size="sm" icon={<Icon.Bookmark size={14} />}>Add to watchlist</Button>
             <Button variant="secondary" size="sm" icon={<Icon.ExternalLink size={14} />}>Open in Groww</Button>
@@ -271,43 +218,29 @@ const ScreenStock = ({ ticker, data, navigate }) => {
 
       {/* Chart + indicator panel */}
       <div className="grid gap-5 mb-5" style={{ gridTemplateColumns: '1fr 320px' }}>
-        {/* Chart card */}
         <Card padding={false}>
           <div className="px-5 py-4 flex items-center justify-between border-b border-line-soft flex-wrap gap-3">
             <div className="flex items-center gap-3">
-              <span className="text-[13px] font-semibold text-fg">Price · 1Y OHLC</span>
+              <span className="text-[13px] font-semibold text-fg">Price · {range} OHLC</span>
               <span className="mono text-[11px] text-fg-dim">{ohlc.length} sessions</span>
             </div>
-
             <div className="flex items-center gap-2">
-              {/* Range selector */}
               <div className="inline-flex p-0.5 bg-ink-800 border border-line rounded-md">
                 {RANGES.map((r) => (
-                  <button
-                    key={r.id}
-                    onClick={() => setRange(r.id)}
-                    className={`h-7 px-2 text-[11.5px] mono font-medium rounded transition-colors ${
-                      range === r.id ? 'bg-ink-500 text-fg' : 'text-fg-muted hover:text-fg'
-                    }`}
-                  >
+                  <button key={r.id} onClick={() => setRange(r.id)}
+                    className={`h-7 px-2 text-[11.5px] mono font-medium rounded transition-colors ${range === r.id ? 'bg-ink-500 text-fg' : 'text-fg-muted hover:text-fg'}`}>
                     {r.id}
                   </button>
                 ))}
               </div>
-              {/* Overlay toggles */}
               <div className="inline-flex p-0.5 bg-ink-800 border border-line rounded-md ml-2">
                 {[
                   { id: 'ema20', label: 'EMA20', color: '#FBBF24' },
                   { id: 'macd', label: 'MACD', color: '#7DD3FC' },
                   { id: 'rsi', label: 'RSI', color: '#A78BFA' },
                 ].map((o) => (
-                  <button
-                    key={o.id}
-                    onClick={() => setOverlays((s) => ({ ...s, [o.id]: !s[o.id] }))}
-                    className={`h-7 px-2 text-[11.5px] font-medium rounded inline-flex items-center gap-1.5 transition-colors ${
-                      overlays[o.id] ? 'bg-ink-500 text-fg' : 'text-fg-muted hover:text-fg'
-                    }`}
-                  >
+                  <button key={o.id} onClick={() => setOverlays((s) => ({ ...s, [o.id]: !s[o.id] }))}
+                    className={`h-7 px-2 text-[11.5px] font-medium rounded inline-flex items-center gap-1.5 transition-colors ${overlays[o.id] ? 'bg-ink-500 text-fg' : 'text-fg-muted hover:text-fg'}`}>
                     <span className="w-2 h-2 rounded-sm" style={{ background: o.color, opacity: overlays[o.id] ? 1 : 0.4 }} />
                     {o.label}
                   </button>
@@ -315,33 +248,22 @@ const ScreenStock = ({ ticker, data, navigate }) => {
               </div>
             </div>
           </div>
-
-          {/* Charts */}
           <div className="p-2">
             <CandlestickChart data={ohlc} overlays={overlays} />
-            {overlays.macd && (
-              <div className="border-t border-line-soft pt-1 mt-1">
-                <MACDChart data={ohlc} />
-              </div>
-            )}
-            {overlays.rsi && (
-              <div className="border-t border-line-soft pt-1 mt-1">
-                <RSIChart data={ohlc} />
-              </div>
-            )}
+            {overlays.macd && <div className="border-t border-line-soft pt-1 mt-1"><MACDChart data={ohlc} /></div>}
+            {overlays.rsi && <div className="border-t border-line-soft pt-1 mt-1"><RSIChart data={ohlc} /></div>}
           </div>
         </Card>
 
-        {/* Indicator panel */}
         <div className="space-y-5">
           <Card padding={false}>
             <div className="px-4 py-3 border-b border-line-soft text-[11px] uppercase tracking-wider text-fg-dim font-semibold">Indicators</div>
             <div className="p-4 space-y-3">
               {[
-                { label: 'RSI 14', value: stock.rsi.toString(), tone: indicatorTone.rsi(stock.rsi), help: stock.rsi >= 45 && stock.rsi <= 62 ? 'Within rally band 45–62' : stock.rsi > 70 ? 'Overbought' : stock.rsi < 30 ? 'Oversold' : 'Outside rally band' },
-                { label: 'MACD histogram', value: (stock.macd >= 0 ? '+' : '') + stock.macd.toFixed(2), tone: indicatorTone.macd(stock.macd), help: stock.macd > 0.2 ? 'Strong positive momentum' : stock.macd > 0 ? 'Mild positive' : 'Negative momentum' },
+                { label: 'RSI 14', value: stock.rsi.toString(), tone: indicatorTone.rsi(stock.rsi), help: stock.rsi >= 45 && stock.rsi <= 62 ? 'Within rally band 45–62' : stock.rsi > 70 ? 'Overbought' : stock.rsi < 30 ? 'Deeply oversold' : stock.rsi < 35 ? 'Oversold — value entry' : 'Outside rally band' },
+                { label: 'MACD histogram', value: (stock.macd >= 0 ? '+' : '') + stock.macd.toFixed(2), tone: indicatorTone.macd(stock.macd), help: stock.macd > 0.5 ? 'Strong positive momentum' : stock.macd > 0 ? 'Mild positive' : 'Negative momentum' },
                 { label: 'Price vs EMA20', value: stock.cmp > stock.ema20 ? `+${((stock.cmp/stock.ema20 - 1)*100).toFixed(2)}%` : `${((stock.cmp/stock.ema20 - 1)*100).toFixed(2)}%`, tone: indicatorTone.ema20(stock.cmp, stock.ema20), help: `EMA20 at ${fmt.num(stock.ema20, 0)}` },
-                { label: '52-week gap', value: `${stock.gap52.toFixed(1)}%`, tone: indicatorTone.gap52(stock.gap52), help: stock.gap52 >= -10 && stock.gap52 <= -4 ? 'Inside value zone' : stock.gap52 > -4 ? 'Near 52w high' : 'Deep discount — value trap risk' },
+                { label: '52-week gap', value: `${stock.gap52.toFixed(1)}%`, tone: indicatorTone.gap52(stock.gap52), help: stock.gap52 >= -16 && stock.gap52 <= -5 ? 'Inside value zone' : stock.gap52 > -5 ? 'Near 52w high' : 'Deep discount — value trap risk' },
               ].map((ind) => (
                 <div key={ind.label} className="bg-ink-600 border border-line rounded-lg p-3">
                   <div className="flex items-center justify-between">
@@ -359,13 +281,13 @@ const ScreenStock = ({ ticker, data, navigate }) => {
             <div className="py-2">
               {triggers.map((t) => (
                 <div key={t.label} className="flex items-center justify-between px-4 py-2.5 border-b border-line-soft last:border-b-0">
-                  <div className="flex items-center gap-2.5">
-                    <span className={`w-5 h-5 rounded-full inline-flex items-center justify-center ${t.pass ? 'bg-bull/15 text-bull' : 'bg-bear/15 text-bear'}`}>
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <span className={`w-5 h-5 rounded-full inline-flex items-center justify-center shrink-0 ${t.pass ? 'bg-bull/15 text-bull' : 'bg-bear/15 text-bear'}`}>
                       {t.pass ? <Icon.Check size={12} /> : <Icon.X size={12} />}
                     </span>
-                    <span className="text-[12.5px] text-fg">{t.label}</span>
+                    <span className="text-[12.5px] text-fg leading-snug">{t.label}</span>
                   </div>
-                  <span className="mono text-[11.5px] text-fg-muted">{t.value}</span>
+                  <span className="mono text-[11.5px] text-fg-muted shrink-0 ml-2">{t.value}</span>
                 </div>
               ))}
             </div>
@@ -379,36 +301,39 @@ const ScreenStock = ({ ticker, data, navigate }) => {
         </div>
       </div>
 
-      {/* Backtest cameo */}
-      <Card padding={false}>
-        <div className="p-5 flex items-center justify-between gap-6 flex-wrap">
-          <div>
-            <div className="flex items-center gap-2 mb-1">
-              <Icon.History size={14} className="text-fg-muted" />
-              <span className="text-[11px] uppercase tracking-wider text-fg-dim font-semibold">Backtest cameo</span>
+      {/* Strategy historical cameo (renamed from Backtest cameo) */}
+      {strategyResult && (
+        <Card padding={false}>
+          <div className="p-5 flex items-center justify-between gap-6 flex-wrap"
+               style={{ borderTop: `1px solid ${laneObj.accent}25` }}>
+            <div className="min-w-0">
+              <div className="flex items-center gap-2 mb-1.5">
+                <Icon.History size={14} className="text-fg-muted" />
+                <span className="text-[11px] uppercase tracking-wider text-fg-dim font-semibold">How this strategy did historically</span>
+              </div>
+              <div className="flex items-baseline gap-6 flex-wrap">
+                <div className="flex items-center gap-2.5">
+                  <span className="inline-flex items-center h-[22px] px-2 text-[11px] font-semibold uppercase tracking-wider rounded border whitespace-nowrap"
+                        style={{ color: laneObj.accent, borderColor: laneObj.accent + '50', background: laneObj.accent + '12' }}>
+                    {laneObj.label}
+                  </span>
+                  <span className="text-[12.5px] text-fg-muted">· {strategyResult.window} backtest</span>
+                </div>
+              </div>
+              <div className="mt-2 flex items-baseline gap-6 flex-wrap text-[13px] mono text-fg-muted">
+                <span><span className="text-fg font-semibold">{strategyResult.triggers}</span> triggers</span>
+                <span className="text-fg-faint">·</span>
+                <span><span className="text-bull font-semibold">{(strategyResult.hitRate * 100).toFixed(0)}%</span> hit rate</span>
+                <span className="text-fg-faint">·</span>
+                <span><span className="text-bull font-semibold">+{strategyResult.avgReturn.toFixed(1)}%</span> avg 30-day return</span>
+              </div>
             </div>
-            <h3 className="text-[15.5px] font-semibold text-fg">How would {stock.ticker} have performed under the Rally filter?</h3>
-            <p className="text-[12.5px] text-fg-muted mt-0.5">Backtested on this ticker's history alone, last 12 months.</p>
-          </div>
-          <div className="flex items-center gap-6">
-            <div className="text-right">
-              <div className="mono text-[20px] font-bold text-fg">7</div>
-              <div className="text-[11px] uppercase tracking-wider text-fg-dim">Triggers</div>
-            </div>
-            <div className="text-right">
-              <div className="mono text-[20px] font-bold text-bull">+6.4%</div>
-              <div className="text-[11px] uppercase tracking-wider text-fg-dim">Avg 30d return</div>
-            </div>
-            <div className="text-right">
-              <div className="mono text-[20px] font-bold text-bull">71%</div>
-              <div className="text-[11px] uppercase tracking-wider text-fg-dim">Hit rate</div>
-            </div>
-            <Button variant="secondary" size="md" iconRight={<Icon.ArrowUpRight size={14} />} onClick={() => navigate('backtest')}>
+            <Button variant="outline" size="md" iconRight={<Icon.ArrowUpRight size={14} />}>
               See full backtest
             </Button>
           </div>
-        </div>
-      </Card>
+        </Card>
+      )}
     </div>
   );
 };
