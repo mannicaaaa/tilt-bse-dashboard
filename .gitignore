@@ -24,13 +24,18 @@ htmlcov/
 
 # Local OHLCV cache + SQLite state
 data/cache/
-data/*.parquet
 data/*.db
 data/*.sqlite
 
-# Keep tracked: mock portfolio + MF holdings CSV + .gitkeep
+# Top-level data parquets are runtime artifacts, but data/snapshot/ ships
+# in the repo because the deployed dashboard reads from it.
+data/*.parquet
+
+# Keep tracked: mock portfolio + MF holdings CSV + snapshot + .gitkeep
 !data/mock_portfolio.json
 !data/mutual_fund_holdings.csv
+!data/snapshot/
+!data/snapshot/**
 !data/.gitkeep
 
 # OS

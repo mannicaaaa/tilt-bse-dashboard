@@ -32,7 +32,7 @@ from tilt.api.schemas import (
     to_sector_tile,
 )
 from tilt.api.service import ScanService, build_snapshot
-from tilt.data import DataFetcher, ParquetCache, YFinanceProvider
+from tilt.data import DataFetcher, ParquetCache, SnapshotProvider, YFinanceProvider
 from tilt.data.bhavcopy_provider import BhavcopyProvider
 from tilt.funds import load_mf_holdings, smart_money_context
 from tilt.portfolio import (
@@ -57,10 +57,25 @@ _scan_service: ScanService | None = None
 
 
 def get_data_fetcher() -> DataFetcher:
+    """Build the DataFetcher.
+
+    Provider chain selected by ``MARKET_DATA_PROVIDER`` env var:
+    - ``snapshot`` (default for demos) — reads frozen parquet snapshot
+      under ``data/snapshot/``. Deterministic, fast, no network. Date in
+      ``data/snapshot/manifest.json``. Refresh with
+      ``python scripts/capture_snapshot.py YYYY-MM-DD``.
+    - ``yfinance`` — live yfinance with bhavcopy fallback. Production path,
+      rate-limited on Render free tier.
+    """
     global _data_fetcher
     if _data_fetcher is None:
+        choice = os.getenv("MARKET_DATA_PROVIDER", "snapshot").lower()
+        if choice == "yfinance":
+            providers = [YFinanceProvider(), BhavcopyProvider()]
+        else:
+            providers = [SnapshotProvider()]
         _data_fetcher = DataFetcher(
-            providers=[YFinanceProvider(), BhavcopyProvider()],
+            providers=providers,
             cache=ParquetCache(Path("data/cache")),
         )
     return _data_fetcher
@@ -222,6 +237,21 @@ def scan_recommendations(svc: ScanService = Depends(get_scan_service)) -> Recomm
             lane_reasons[lane_id] = explain_empty_lane(lane_id, stats, mf_tracked=mf_tracked_count)
 
     now = datetime.now(UTC)
+
+    # Surface snapshot metadata so the frontend hero can display "Data as of
+    # March 27, 2026" alongside the refresh timestamp. Only populated when
+    # MARKET_DATA_PROVIDER=snapshot is active.
+    snapshot_date: str | None = None
+    data_mode = "live"
+    for provider in svc.fetcher.providers:
+        if isinstance(provider, SnapshotProvider):
+            try:
+                snapshot_date = provider.snapshot_date.isoformat()
+                data_mode = "snapshot"
+            except Exception:
+                pass
+            break
+
     return RecommendationsResponse(
         generated_at=now,
         stale_after=now,
@@ -229,6 +259,8 @@ def scan_recommendations(svc: ScanService = Depends(get_scan_service)) -> Recomm
         cards=cards,
         tracked_funds=[f.short_name for f in funds],
         lane_reasons=lane_reasons,
+        snapshot_date=snapshot_date,
+        data_mode=data_mode,
     )
 
 

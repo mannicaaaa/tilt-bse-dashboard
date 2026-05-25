@@ -12,6 +12,7 @@ from tilt.data.bhavcopy_provider import BhavcopyProvider
 from tilt.data.cache import ParquetCache
 from tilt.data.fetcher import DataFetcher, FetchResult
 from tilt.data.provider import MarketDataProvider, ProviderError
+from tilt.data.snapshot_provider import SnapshotProvider
 from tilt.data.yfinance_provider import YFinanceProvider
 
 __all__ = [
@@ -21,5 +22,6 @@ __all__ = [
     "MarketDataProvider",
     "ParquetCache",
     "ProviderError",
+    "SnapshotProvider",
     "YFinanceProvider",
 ]

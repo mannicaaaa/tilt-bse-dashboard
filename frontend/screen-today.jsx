@@ -97,12 +97,20 @@ const ScreenToday = ({ data, refreshing, lastRefreshedText, onRefresh, navigate,
         }} />
         <div className="relative flex items-start justify-between gap-6 flex-wrap">
           <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-2 mb-2.5">
+            <div className="flex items-center gap-2 mb-2.5 flex-wrap">
               <span className="inline-flex items-center gap-1.5 px-2 h-6 rounded-full border border-bull/30 bg-bull/10 text-bull text-[11px] font-semibold uppercase tracking-wider">
                 <Icon.Sparkles size={12} />
-                Today
+                {data.DATA_MODE === 'snapshot' ? 'Snapshot' : 'Today'}
               </span>
-              <span className="text-[12px] text-fg-muted mono">{new Date().toLocaleDateString('en-IN', { weekday: 'long', month: 'short', day: 'numeric' })}</span>
+              {data.SNAPSHOT_DATE ? (
+                <span className="text-[12px] text-fg-muted mono">
+                  Data as of {new Date(data.SNAPSHOT_DATE + 'T00:00:00').toLocaleDateString('en-IN', { weekday: 'long', month: 'short', day: 'numeric', year: 'numeric' })}
+                </span>
+              ) : (
+                <span className="text-[12px] text-fg-muted mono">
+                  {new Date().toLocaleDateString('en-IN', { weekday: 'long', month: 'short', day: 'numeric' })}
+                </span>
+              )}
             </div>
             <h1 className="text-[30px] font-semibold text-fg tracking-tight leading-tight">Today's Picks</h1>
             <p className="mt-2 text-[14px] text-fg-muted leading-relaxed max-w-3xl">

@@ -164,6 +164,8 @@ class RecommendationsResponse(BaseModel):
     cards: list[RecommendationCard]
     tracked_funds: list[str] = []  # short names of MFs whose holdings were scanned
     lane_reasons: dict[str, str] = {}  # lane_id → "why empty" plain-English explanation
+    snapshot_date: str | None = None  # ISO date; only set when MARKET_DATA_PROVIDER=snapshot
+    data_mode: str = "snapshot"  # "snapshot" | "live"
 
 
 class RefreshResponse(BaseModel):

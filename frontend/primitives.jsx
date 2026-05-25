@@ -222,8 +222,9 @@ const StockCard = ({ stock, sector, laneLabel, laneAccent, onOpen }) => {
 
   return (
     <div
-      className="group relative bg-ink-700 border border-line rounded-card overflow-hidden flex flex-col transition-all duration-150 hover:-translate-y-[1px] hover:shadow-lift"
+      className="group relative bg-ink-700 border border-line rounded-card overflow-hidden flex flex-col transition-all duration-200 ease-out hover:-translate-y-[2px] hover:shadow-lift hover:border-line-strong cursor-pointer"
       style={{ borderLeft: `2px solid ${laneAccent}` }}
+      onClick={onOpen}
     >
       {/* Lane label tag, top-right */}
       <div className="absolute top-3 right-3 z-10">

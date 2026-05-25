@@ -123,6 +123,24 @@ function App() {
     window.scrollTo({ top: 0, behavior: 'instant' });
   }, []);
 
+  // Lazy-fetch per-stock OHLC when the user navigates into the Stock screen.
+  // We mutate liveData's STOCK_OHLC so the stock screen re-renders with real bars.
+  useEffect(() => {
+    if (route.screen !== 'stock' || !route.params) return;
+    if (!window.TiltAPI || !window.TiltAPI.isLive()) return;
+    let cancelled = false;
+    window.TiltAPI.stock(route.params)
+      .then((resp) => {
+        if (cancelled) return;
+        const ohlc = window.TiltAPI.adapters.adaptStockDetail(resp);
+        setMarketData((prev) => ({ ...(prev || {}), STOCK_OHLC: ohlc }));
+      })
+      .catch((err) => {
+        console.error("Stock detail fetch failed:", err);
+      });
+    return () => { cancelled = true; };
+  }, [route.screen, route.params]);
+
   const onRefresh = async () => {
     setRefreshing(true);
     try {

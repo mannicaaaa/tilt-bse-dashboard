@@ -28,31 +28,68 @@ DEFAULT_MF_CSV_PATH = Path("data/mutual_fund_holdings.csv")
 # (lowercased, punctuation/whitespace cleaned). Add entries when monthly
 # refresh surfaces a new holding.
 _NAME_TO_TICKER: dict[str, str] = {
-    # ✓ Tickers already in Tilt's curated Nifty 500 starter universe
+    # Nifty 500 large/mid caps
+    "hdfc bank ltd": "HDFCBANK",
+    "icici bank ltd": "ICICIBANK",
+    "reliance industries ltd": "RELIANCE",
+    "infosys ltd": "INFY",
+    "tata consultancy services ltd": "TCS",
     "bharti airtel ltd": "BHARTIARTL",
-    "eicher motors ltd": "EICHERMOT",
+    "axis bank ltd": "AXISBANK",
+    "state bank of india": "SBIN",
+    "kotak mahindra bank ltd": "KOTAKBANK",
+    "larsen toubro ltd": "LT",
+    "larsen and toubro ltd": "LT",
+    "maruti suzuki india ltd": "MARUTI",
+    "mahindra mahindra ltd": "M&M",
+    "ntpc ltd": "NTPC",
+    "power grid corporation of india ltd": "POWERGRID",
+    "tata power company ltd": "TATAPOWER",
+    "itc ltd": "ITC",
+    "coal india ltd": "COALINDIA",
+    "hcl technologies ltd": "HCLTECH",
+    "wipro ltd": "WIPRO",
+    "tech mahindra ltd": "TECHM",
+    "sbi life insurance company ltd": "SBILIFE",
+    "hdfc life insurance company ltd": "HDFCLIFE",
+    "apollo hospitals enterprise ltd": "APOLLOHOSP",
+    "punjab national bank": "PNB",
+    "bank of baroda": "BANKBARODA",
+    # Pharma
+    "sun pharmaceutical industries ltd": "SUNPHARMA",
     "divis laboratories ltd": "DIVISLAB",
     "divi s laboratories ltd": "DIVISLAB",
-    "sun pharmaceutical industries ltd": "SUNPHARMA",
+    "dr reddys laboratories ltd": "DRREDDY",
+    "dr reddy s laboratories ltd": "DRREDDY",
     "lupin ltd": "LUPIN",
+    "cipla ltd": "CIPLA",
+    "glenmark pharmaceuticals ltd": "GLENMARK",
+    "glenmark pharmacuticles ltd": "GLENMARK",
+    # Banks
     "the federal bank ltd": "FEDERALBNK",
+    "federal bank ltd": "FEDERALBNK",
     "indusind bank ltd": "INDUSINDBK",
-    # Newly added (will be appended to the universe loader)
+    "au small finance bank ltd": "AUBANK",
+    "karur vysya bank ltd": "KARURVYSYA",
+    # Capital markets / Financial Services
     "central depository services india ltd": "CDSL",
     "bse ltd": "BSE",
     "multi commodity exchange of india ltd": "MCX",
     "hdfc asset management company ltd": "HDFCAMC",
     "360 one wam ltd": "360ONE",
     "angel one ltd": "ANGELONE",
-    "au small finance bank ltd": "AUBANK",
     "pb fintech ltd": "POLICYBZR",
     "max financial services ltd": "MFSL",
+    "power finance corp ltd": "PFC",  # not yet in our universe — see KNOWN_UNMAPPABLE
+    # Industrials / Other
     "bharat heavy electricals ltd": "BHEL",
     "naveen fluorine international ltd": "NAVINFLUOR",
-    "karur vysya bank ltd": "KARURVYSYA",
     "fsn e commerce ventures ltd": "NYKAA",
-    "glenmark pharmaceuticals ltd": "GLENMARK",
-    "glenmark pharmacuticles ltd": "GLENMARK",  # CSV typo
+    "eicher motors ltd": "EICHERMOT",
+    "irctc ltd": "IRCTC",  # not in universe yet
+    "indian railway finance corp ltd": "IRFC",  # not in universe yet
+    "bajaj holdings investment ltd": "BAJAJHLDNG",  # not in universe yet
+    "dlf ltd": "DLF",
 }
 
 # Stocks we deliberately drop until we can confirm tickers (renames,
