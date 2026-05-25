@@ -1,230 +1,251 @@
-// v2 app — routing + state + live API wiring.
-//
-// Fetches TiltV2 market data on mount. If TILT_API_BASE is set and the API
-// responds, screens render against real data. If the API is unreachable, we
-// surface the error in a top banner and render empty arrays — never fall
-// back to fabricated mock data.
+// Main App — composes the daily brief.
+// Fetches live data from the API (via window.TILT_API.fetchTiltData) on mount,
+// shows a loading state, surfaces API errors transparently.
+const App = () => {
+  const {
+    TopNav,
+    MarketRead,
+    HeroPick,
+    SupportingPickRow,
+    SectorStrip,
+    PortfolioSidebar,
+    StockDetail,
+  } = window;
 
-const {
-  Icon, Sidebar, Topbar, Shell, PageHeader,
-  ScreenToday, ScreenPortfolio, ScreenStock,
-  Card, Button,
-  useTweaks, TweaksPanel, TweakSection, TweakRadio, TweakToggle, TweakColor,
-} = window;
+  const [data, setData] = React.useState(window.TILT_DATA);
+  const [loading, setLoading] = React.useState(true);
+  const [refreshing, setRefreshing] = React.useState(false);
+  const [openTicker, setOpenTicker] = React.useState(null);
+  const [selectedSector, setSelectedSector] = React.useState(null);
 
-const { useState, useEffect, useCallback } = React;
+  const [t, setTweak] = window.useTweaks(/*EDITMODE-BEGIN*/{
+    "theme": "dark",
+    "density": "comfortable",
+    "showSidebar": true
+  }/*EDITMODE-END*/);
 
-const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
-  "theme": "dark",
-  "accent": "#22D3A4",
-  "density": "regular",
-  "showLanes": ["strong", "momentum", "value"]
-}/*EDITMODE-END*/;
+  const dark = t.theme === "dark";
 
-const ScreenSettings = () => (
-  <div className="tilt-fade">
-    <PageHeader kicker="Configuration" title="Settings" subtitle="Connect data sources and configure filter thresholds." />
-    <div className="grid gap-4" style={{ gridTemplateColumns: '1fr 1fr' }}>
-      <Card>
-        <div className="text-[11px] uppercase tracking-[0.14em] text-fg-dim font-semibold mb-3">Data sources</div>
-        <div className="space-y-3">
-          {[
-            { label: 'Live OHLCV (yfinance)', value: 'Active · Render-hosted backend', ok: true },
-            { label: 'NSE sectoral indices', value: '14 indices · constituent-averaged momentum', ok: true },
-            { label: 'Groww brokerage', value: 'Mock provider · live swap pending credentials', ok: false },
-            { label: 'Mutual fund holdings', value: 'Hand-curated monthly snapshot', ok: true },
-          ].map((row) => (
-            <div key={row.label} className="flex items-center justify-between p-3 bg-ink-600 border border-line rounded-lg">
-              <div className="min-w-0">
-                <div className="text-[13px] font-medium text-fg">{row.label}</div>
-                <div className="text-[11.5px] mono text-fg-muted">{row.value}</div>
-              </div>
-              <span className={`w-2 h-2 rounded-full shrink-0 ${row.ok ? 'bg-bull' : 'bg-warn'}`}></span>
-            </div>
-          ))}
-        </div>
-      </Card>
-      <Card>
-        <div className="text-[11px] uppercase tracking-[0.14em] text-fg-dim font-semibold mb-3">Filter thresholds</div>
-        <div className="space-y-3 text-[12.5px]">
-          <div className="flex items-center justify-between"><span className="text-fg-muted">RSI rally band (Strong)</span><span className="mono text-fg">45 – 62</span></div>
-          <div className="flex items-center justify-between"><span className="text-fg-muted">RSI rising (Momentum)</span><span className="mono text-fg">≥ 50</span></div>
-          <div className="flex items-center justify-between"><span className="text-fg-muted">RSI oversold (Value)</span><span className="mono text-fg">&lt; 35</span></div>
-          <div className="flex items-center justify-between"><span className="text-fg-muted">52W gap (Strong)</span><span className="mono text-fg">≥ 15%</span></div>
-          <div className="flex items-center justify-between"><span className="text-fg-muted">52W gap (Value)</span><span className="mono text-fg">≥ 10%</span></div>
-          <div className="flex items-center justify-between"><span className="text-fg-muted">MACD crossover window</span><span className="mono text-fg">3 bars</span></div>
-        </div>
-        <div className="mt-4 pt-4 border-t border-line-soft text-[11.5px] text-fg-dim">
-          Thresholds defined in <span className="mono text-fg-muted">tilt/signals/filters.py</span> + <span className="mono text-fg-muted">tilt/api/recommendations.py</span>.
-        </div>
-      </Card>
-    </div>
-  </div>
-);
+  // Filter supporting picks by sector when a sector is selected.
+  // We match on sector_id when available; fall back to substring match on name.
+  const filteredSupporting = selectedSector
+    ? (data.supporting || []).filter((p) =>
+        (p.sector_id && p.sector_id === selectedSector) ||
+        (p.sector && selectedSector && p.sector.includes(selectedSector))
+      )
+    : data.supporting || [];
 
-const useTimeAgo = (date) => {
-  const [, force] = useState(0);
-  useEffect(() => { const t = setInterval(() => force((n) => n + 1), 20000); return () => clearInterval(t); }, []);
-  const diff = Math.floor((Date.now() - date.getTime()) / 1000);
-  if (diff < 60) return `${diff}s ago`;
-  if (diff < 3600) return `${Math.floor(diff / 60)} min ago`;
-  return `${Math.floor(diff / 3600)}h ago`;
-};
-
-function App() {
-  const [tweaks, setTweak] = useTweaks(TWEAK_DEFAULTS);
-  const [route, setRoute] = useState({ screen: 'today', params: null, extra: null });
-  const [refreshing, setRefreshing] = useState(false);
-  const [refreshedAt, setRefreshedAt] = useState(new Date());
-  const [scanStats, setScanStats] = useState({ tickers: 0, duration: 0 });
-  const lastRefreshedText = useTimeAgo(refreshedAt);
-
-  // Live data wiring — fetch from API; never fall back to mock seeds.
-  const [apiError, setApiError] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [marketData, setMarketData] = useState(null);
-
-  const data = marketData
-    ? { ...window.TiltV2, ...marketData }
-    : window.TiltV2;
-
-  const loadMarketData = useCallback(async () => {
-    if (!window.TiltAPI || !window.TiltAPI.isLive()) {
-      setApiError("TILT_API_BASE not configured — set it in index.html");
-      setLoading(false);
-      return;
-    }
-    try {
-      const fresh = await window.TiltAPI.fetchTiltV2();
-      setMarketData(fresh);
-      setApiError(null);
-      setRefreshedAt(new Date());
-      setScanStats({
-        tickers: (fresh.SECTORS || []).reduce((acc, s) => acc + (s.count || 0), 0) || 79,
-        duration: 0,
-      });
-    } catch (err) {
-      console.error("Tilt API fetch failed:", err);
-      setApiError(err.message || "API unreachable");
-      setMarketData(null);
-    }
-  }, []);
-
-  useEffect(() => {
-    loadMarketData().finally(() => setLoading(false));
-  }, [loadMarketData]);
-
-  useEffect(() => {
-    document.documentElement.classList.toggle('light', tweaks.theme === 'light');
-  }, [tweaks.theme]);
-
-  const navigate = useCallback((screen, params = null, extra = null) => {
-    setRoute({ screen, params, extra });
-    window.scrollTo({ top: 0, behavior: 'instant' });
-  }, []);
-
-  // Lazy-fetch per-stock OHLC when the user navigates into the Stock screen.
-  // We mutate liveData's STOCK_OHLC so the stock screen re-renders with real bars.
-  useEffect(() => {
-    if (route.screen !== 'stock' || !route.params) return;
-    if (!window.TiltAPI || !window.TiltAPI.isLive()) return;
-    let cancelled = false;
-    window.TiltAPI.stock(route.params)
-      .then((resp) => {
-        if (cancelled) return;
-        const ohlc = window.TiltAPI.adapters.adaptStockDetail(resp);
-        setMarketData((prev) => ({ ...(prev || {}), STOCK_OHLC: ohlc }));
-      })
-      .catch((err) => {
-        console.error("Stock detail fetch failed:", err);
-      });
-    return () => { cancelled = true; };
-  }, [route.screen, route.params]);
-
-  const onRefresh = async () => {
+  // Load on mount + on refresh
+  const reload = React.useCallback(async () => {
     setRefreshing(true);
     try {
-      const r = await window.TiltAPI.refresh();
-      const fresh = await window.TiltAPI.fetchTiltV2();
-      setMarketData(fresh);
-      setApiError(null);
-      setRefreshedAt(new Date());
-      setScanStats({
-        tickers: r.tickers_fetched,
-        duration: r.duration_seconds,
-      });
-    } catch (err) {
-      console.error("Refresh failed:", err);
-      setApiError(err.message || "Refresh failed");
-      setMarketData(null);
+      const fresh = await window.TILT_API.fetchTiltData();
+      setData(fresh);
+      window.TILT_DATA = fresh;
     } finally {
       setRefreshing(false);
+      setLoading(false);
     }
-  };
+  }, []);
 
-  const onToggleTheme = () => setTweak('theme', tweaks.theme === 'dark' ? 'light' : 'dark');
-  const sidebarCurrent = route.screen === 'stock' ? 'today' : route.screen;
+  React.useEffect(() => {
+    reload();
+  }, [reload]);
 
-  const renderScreen = () => {
-    switch (route.screen) {
-      case 'today':
-        return <ScreenToday data={data} refreshing={refreshing} lastRefreshedText={lastRefreshedText}
-                            onRefresh={onRefresh} navigate={navigate} scanStats={scanStats} />;
-      case 'portfolio':
-        return <ScreenPortfolio data={data} navigate={navigate} />;
-      case 'stock':
-        return <ScreenStock ticker={route.params} data={data} navigate={navigate} fromLane={route.extra?.lane} />;
-      case 'settings':
-        return <ScreenSettings />;
-      default:
-        return null;
-    }
-  };
+  React.useEffect(() => {
+    document.body.classList.toggle("light", !dark);
+  }, [dark]);
+
+  if (loading) {
+    return (
+      <div
+        style={{
+          minHeight: "100vh",
+          background: "var(--bg)",
+          color: "var(--fg-muted)",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          fontFamily: "'JetBrains Mono', monospace",
+          fontSize: 13,
+          letterSpacing: 0.5,
+        }}
+      >
+        Loading today's brief…
+      </div>
+    );
+  }
 
   return (
-    <div data-screen-label={`Tilt · ${route.screen}`}>
-      <Sidebar current={sidebarCurrent} onNavigate={(id) => navigate(id)} />
-      <Topbar current={route.screen} theme={tweaks.theme} onToggleTheme={onToggleTheme} />
-      {apiError && (
-        <div style={{ margin: '0 auto', maxWidth: 1440, padding: '12px 32px' }}>
-          <div style={{
-            padding: '10px 14px',
-            border: '1px solid rgba(248,113,113,0.4)',
-            background: 'rgba(248,113,113,0.08)',
-            color: '#FCA5A5',
+    <div data-screen-label="01 Daily Brief" style={{ minHeight: "100vh", background: "var(--bg)" }}>
+      <TopNav
+        snapshotDate={data.snapshot_date}
+        dark={dark}
+        onToggleTheme={() => setTweak("theme", dark ? "light" : "dark")}
+        onRefresh={reload}
+        refreshing={refreshing}
+        llmProvider={data.llm_provider}
+        dataMode={data.data_mode}
+      />
+
+      {data.error && (
+        <div
+          style={{
+            maxWidth: 1320,
+            margin: "12px auto 0",
+            padding: "10px 14px",
+            border: "1px solid rgba(248,113,113,0.4)",
+            background: "rgba(248,113,113,0.08)",
+            color: "#FCA5A5",
             borderRadius: 8,
             fontSize: 13,
-            fontFamily: 'JetBrains Mono, ui-monospace, monospace',
-          }}>
-            API error: {apiError}. Showing empty state. Hit Refresh to retry.
-          </div>
+            fontFamily: "'JetBrains Mono', monospace",
+          }}
+        >
+          API error: {data.error}. Showing fallback view. Hit Refresh to retry.
         </div>
       )}
-      {loading && !marketData && (
-        <div style={{
-          margin: '0 auto', maxWidth: 1440, padding: '12px 32px',
-          color: '#A1A1AA', fontSize: 13,
-          fontFamily: 'JetBrains Mono, ui-monospace, monospace',
-        }}>
-          Loading data from API… first call hits live yfinance, can take 15–30s.
-        </div>
-      )}
-      <Shell>{renderScreen()}</Shell>
 
-      <TweaksPanel>
-        <TweakSection label="Appearance" />
-        <TweakRadio label="Theme" value={tweaks.theme} options={['dark', 'light']}
-                    onChange={(v) => setTweak('theme', v)} />
-        <TweakColor label="Accent" value={tweaks.accent}
-                    options={['#22D3A4', '#7DD3FC', '#A78BFA', '#FBBF24', '#F472B6']}
-                    onChange={(v) => setTweak('accent', v)} />
-        <TweakRadio label="Density" value={tweaks.density}
-                    options={['compact', 'regular', 'comfy']}
-                    onChange={(v) => setTweak('density', v)} />
-      </TweaksPanel>
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: t.showSidebar ? "minmax(0, 1fr) 320px" : "minmax(0, 1fr)",
+          gap: 32,
+          maxWidth: 1320,
+          margin: "0 auto",
+          padding: "32px 32px 64px",
+        }}
+      >
+        {/* MAIN COLUMN */}
+        <main style={{ minWidth: 0 }}>
+          <MarketRead data={data} />
+
+          {data.hero ? (
+            <HeroPick pick={data.hero} onOpenDetail={(t) => setOpenTicker(t)} />
+          ) : (
+            <section
+              style={{
+                background: "var(--bg-card)",
+                border: "1px dashed var(--border)",
+                borderRadius: 16,
+                padding: 32,
+                marginBottom: 36,
+                color: "var(--fg-muted)",
+                textAlign: "center",
+              }}
+            >
+              No conviction pick today — none of the {data.scan_stats?.tickers_scanned || "—"} scanned tickers cleared the lane filters.
+            </section>
+          )}
+
+          {/* Supporting picks list */}
+          <section style={{ marginBottom: 36 }}>
+            <header
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "baseline",
+                marginBottom: 16,
+              }}
+            >
+              <h2
+                style={{
+                  fontFamily: "'JetBrains Mono', monospace",
+                  fontSize: 11,
+                  letterSpacing: 1.4,
+                  textTransform: "uppercase",
+                  color: "var(--fg-muted)",
+                  margin: 0,
+                }}
+              >
+                Supporting Picks
+                <span style={{ color: "var(--fg-faint)", marginLeft: 10 }}>
+                  {filteredSupporting.length} of {(data.supporting || []).length}
+                </span>
+              </h2>
+              {selectedSector && (
+                <button
+                  onClick={() => setSelectedSector(null)}
+                  style={{
+                    background: "transparent",
+                    border: "1px solid var(--border)",
+                    color: "var(--fg-muted)",
+                    borderRadius: 999,
+                    padding: "4px 10px",
+                    fontSize: 11,
+                    cursor: "pointer",
+                    fontFamily: "inherit",
+                  }}
+                >
+                  Clear filter · {selectedSector}
+                </button>
+              )}
+            </header>
+            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+              {filteredSupporting.length === 0 && (
+                <div
+                  style={{
+                    padding: "32px 24px",
+                    border: "1px dashed var(--border)",
+                    borderRadius: 12,
+                    color: "var(--fg-faint)",
+                    textAlign: "center",
+                    fontSize: 13,
+                  }}
+                >
+                  No supporting picks in this sector today.
+                </div>
+              )}
+              {filteredSupporting.map((p) => (
+                <SupportingPickRow key={p.ticker} pick={p} onOpen={(t) => setOpenTicker(t)} />
+              ))}
+            </div>
+          </section>
+
+          <SectorStrip
+            sectors={data.sectors || []}
+            selectedSector={selectedSector}
+            onSelect={setSelectedSector}
+          />
+        </main>
+
+        {/* RIGHT SIDEBAR */}
+        {t.showSidebar && data.portfolio && (
+          <PortfolioSidebar data={data.portfolio} onOpenStock={(t) => setOpenTicker(t)} />
+        )}
+      </div>
+
+      {/* Detail overlay */}
+      {openTicker && (
+        <StockDetail ticker={openTicker} allData={data} onClose={() => setOpenTicker(null)} />
+      )}
+
+      {/* Tweaks panel */}
+      {window.TweaksPanel && (
+        <window.TweaksPanel>
+          <window.TweakSection label="Theme" />
+          <window.TweakRadio
+            label="Mode"
+            value={t.theme}
+            options={["dark", "light"]}
+            onChange={(v) => setTweak("theme", v)}
+          />
+          <window.TweakSection label="Layout" />
+          <window.TweakToggle
+            label="Portfolio sidebar"
+            value={t.showSidebar}
+            onChange={(v) => setTweak("showSidebar", v)}
+          />
+          <window.TweakRadio
+            label="Density"
+            value={t.density}
+            options={["comfortable", "compact"]}
+            onChange={(v) => setTweak("density", v)}
+          />
+        </window.TweaksPanel>
+      )}
     </div>
   );
-}
+};
 
-const root = ReactDOM.createRoot(document.getElementById('root'));
-root.render(<App />);
+ReactDOM.createRoot(document.getElementById("root")).render(<App />);

@@ -3,87 +3,102 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Tilt — Today's Picks</title>
+<title>Tilt — Daily Brief</title>
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
-<script src="https://cdn.tailwindcss.com"></script>
-<script>
-  tailwind.config = {
-    darkMode: 'class',
-    theme: {
-      extend: {
-        fontFamily: {
-          sans: ['Inter', 'ui-sans-serif', 'system-ui'],
-          mono: ['JetBrains Mono', 'ui-monospace', 'monospace'],
-        },
-        colors: {
-          ink: {
-            900: '#0A0A0B', 800: '#101013', 700: '#16161A',
-            600: '#1C1C21', 500: '#23232A', 400: '#2D2D36',
-          },
-          line: { DEFAULT: '#23232A', soft: '#1C1C21', strong: '#2D2D36' },
-          fg: { DEFAULT: '#F4F4F5', muted: '#A1A1AA', dim: '#71717A', faint: '#52525B' },
-          bull: { DEFAULT: '#22D3A4', soft: 'rgba(34,211,164,0.12)' },
-          bear: { DEFAULT: '#F87171', soft: 'rgba(248,113,113,0.12)' },
-          warn: { DEFAULT: '#FBBF24', soft: 'rgba(251,191,36,0.12)' },
-          laneStrong:   '#22D3A4',
-          laneMomentum: '#7DD3FC',
-          laneValue:    '#FBBF24',
-        },
-        borderRadius: { card: '12px' },
-        boxShadow: {
-          card: '0 1px 0 rgba(255,255,255,0.02) inset, 0 1px 2px rgba(0,0,0,0.6)',
-          lift: '0 8px 24px rgba(0,0,0,0.4), 0 2px 6px rgba(0,0,0,0.3)',
-        },
-      },
-    },
-  };
-</script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
 <style>
-  html, body { background: #0A0A0B; color: #F4F4F5; }
-  body { font-family: 'Inter', ui-sans-serif, system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
-  .mono { font-family: 'JetBrains Mono', ui-monospace, monospace; font-variant-numeric: tabular-nums; }
+  :root {
+    /* DARK (default) — derived from brief: bg #0A0A0B, cards #16161A, fg #F4F4F5 */
+    --bg: #0A0A0B;
+    --bg-elev: #111114;
+    --bg-card: #16161A;
+    --bg-card-hover: #1C1C22;
+    --fg: #F4F4F5;
+    --fg-muted: #9A9AA3;
+    --fg-faint: #5E5E68;
+    --border: #232329;
+    --border-strong: #2E2E36;
+  }
+
+  body.light {
+    --bg: #FAFAFA;
+    --bg-elev: #F2F2F4;
+    --bg-card: #FFFFFF;
+    --bg-card-hover: #F6F6F8;
+    --fg: #14141A;
+    --fg-muted: #5A5A66;
+    --fg-faint: #95959E;
+    --border: #E5E5EA;
+    --border-strong: #D4D4D9;
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    background: var(--bg);
+    color: var(--fg);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+    font-feature-settings: "cv11", "ss01";
+    transition: background 0.2s, color 0.2s;
+  }
+
+  /* Subtle scrollbar */
   ::-webkit-scrollbar { width: 10px; height: 10px; }
   ::-webkit-scrollbar-track { background: transparent; }
-  ::-webkit-scrollbar-thumb { background: #2D2D36; border-radius: 8px; border: 2px solid #0A0A0B; }
-  ::-webkit-scrollbar-thumb:hover { background: #3a3a44; }
-  html.light, html.light body { background: #FAFAFA; color: #18181B; }
+  ::-webkit-scrollbar-thumb {
+    background: var(--border-strong);
+    border-radius: 999px;
+    border: 2px solid var(--bg);
+  }
+  ::-webkit-scrollbar-thumb:hover { background: var(--fg-faint); }
 
-  @keyframes tiltFade { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
-  .tilt-fade { animation: tiltFade 220ms ease-out both; }
-  @keyframes tiltSpin { to { transform: rotate(360deg); } }
-  .tilt-spin { animation: tiltSpin 0.9s linear infinite; }
-  @keyframes tiltPulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }
-  .tilt-pulse { animation: tiltPulse 1.6s ease-in-out infinite; }
-  .ring-focus:focus-visible { outline: 2px solid #22D3A4; outline-offset: 2px; }
-  table { border-collapse: separate; border-spacing: 0; }
+  button { font-family: inherit; }
 
-  .lane-strong   { --lane: #22D3A4; --lane-soft: rgba(34,211,164,0.14); }
-  .lane-momentum { --lane: #7DD3FC; --lane-soft: rgba(125,211,252,0.14); }
-  .lane-value    { --lane: #FBBF24; --lane-soft: rgba(251,191,36,0.14); }
-  .lane-smart    { --lane: #A78BFA; --lane-soft: rgba(167,139,250,0.14); }
+  /* tabular numerals on all mono — for clean column alignment */
+  [style*="JetBrains Mono"] { font-variant-numeric: tabular-nums; }
+
+  @keyframes tilt-fade-in {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+  }
+  @keyframes tilt-slide-up {
+    from { opacity: 0; transform: translateY(12px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes spin {
+    from { transform: rotate(0deg); }
+    to   { transform: rotate(360deg); }
+  }
 </style>
 </head>
-<body class="font-sans">
-  <div id="root"></div>
+<body>
+<div id="root"></div>
 
-  <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
-  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
-  <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
 
-  <!-- Live API base — flip to local during dev: http://localhost:8000 -->
-  <script>window.TILT_API_BASE = "https://tilt-api-2fhp.onrender.com";</script>
-  <script src="api.js"></script>
+<!-- Data + helpers (plain JS, not babel) -->
+<script src="data.js"></script>
 
-  <script type="text/babel" src="icons.jsx"></script>
-  <script type="text/babel" src="tweaks-panel.jsx"></script>
-  <script type="text/babel" src="data.jsx"></script>
-  <script type="text/babel" src="primitives.jsx"></script>
-  <script type="text/babel" src="chrome.jsx"></script>
-  <script type="text/babel" src="screen-today.jsx"></script>
-  <script type="text/babel" src="screen-portfolio.jsx"></script>
-  <script type="text/babel" src="screen-stock.jsx"></script>
-  <script type="text/babel" src="app.jsx"></script>
+<!-- Tweaks shell -->
+<script type="text/babel" src="tweaks-panel.jsx"></script>
+
+<!-- Components -->
+<script type="text/babel" src="components/icon.jsx"></script>
+<script type="text/babel" src="components/lane-tag.jsx"></script>
+<script type="text/babel" src="components/top-nav.jsx"></script>
+<script type="text/babel" src="components/market-read.jsx"></script>
+<script type="text/babel" src="components/hero-pick.jsx"></script>
+<script type="text/babel" src="components/supporting-pick.jsx"></script>
+<script type="text/babel" src="components/sector-strip.jsx"></script>
+<script type="text/babel" src="components/portfolio-sidebar.jsx"></script>
+<script type="text/babel" src="components/stock-detail.jsx"></script>
+
+<!-- App -->
+<script type="text/babel" src="app.jsx"></script>
 </body>
 </html>
