@@ -1,0 +1,11 @@
+[
+  { "ticker": "HDFCBANK", "name": "HDFC Bank Ltd" },
+  { "ticker": "ICICIBANK", "name": "ICICI Bank Ltd" },
+  { "ticker": "KOTAKBANK", "name": "Kotak Mahindra Bank Ltd" },
+  { "ticker": "AXISBANK", "name": "Axis Bank Ltd" },
+  { "ticker": "SBIN", "name": "State Bank of India" },
+  { "ticker": "BAJFINANCE", "name": "Bajaj Finance Ltd" },
+  { "ticker": "BAJAJFINSV", "name": "Bajaj Finserv Ltd" },
+  { "ticker": "HDFCLIFE", "name": "HDFC Life Insurance Company Ltd" },
+  { "ticker": "SBILIFE", "name": "SBI Life Insurance Company Ltd" }
+]

@@ -1,0 +1,11 @@
+[
+  { "ticker": "HINDUNILVR", "name": "Hindustan Unilever Ltd" },
+  { "ticker": "ITC", "name": "ITC Ltd" },
+  { "ticker": "NESTLEIND", "name": "Nestle India Ltd" },
+  { "ticker": "BRITANNIA", "name": "Britannia Industries Ltd" },
+  { "ticker": "TATACONSUM", "name": "Tata Consumer Products Ltd" },
+  { "ticker": "DABUR", "name": "Dabur India Ltd" },
+  { "ticker": "MARICO", "name": "Marico Ltd" },
+  { "ticker": "GODREJCP", "name": "Godrej Consumer Products Ltd" },
+  { "ticker": "COLPAL", "name": "Colgate-Palmolive (India) Ltd" }
+]

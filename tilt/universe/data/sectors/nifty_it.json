@@ -1,0 +1,9 @@
+[
+  { "ticker": "TCS", "name": "Tata Consultancy Services Ltd" },
+  { "ticker": "INFY", "name": "Infosys Ltd" },
+  { "ticker": "WIPRO", "name": "Wipro Ltd" },
+  { "ticker": "HCLTECH", "name": "HCL Technologies Ltd" },
+  { "ticker": "TECHM", "name": "Tech Mahindra Ltd" },
+  { "ticker": "MPHASIS", "name": "Mphasis Ltd" },
+  { "ticker": "PERSISTENT", "name": "Persistent Systems Ltd" }
+]

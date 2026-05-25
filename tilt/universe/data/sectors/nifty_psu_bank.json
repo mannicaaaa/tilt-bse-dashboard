@@ -1,0 +1,7 @@
+[
+  { "ticker": "SBIN", "name": "State Bank of India" },
+  { "ticker": "PNB", "name": "Punjab National Bank" },
+  { "ticker": "BANKBARODA", "name": "Bank of Baroda" },
+  { "ticker": "CANBK", "name": "Canara Bank" },
+  { "ticker": "UNIONBANK", "name": "Union Bank of India" }
+]

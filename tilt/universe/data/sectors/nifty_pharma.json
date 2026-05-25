@@ -1,0 +1,9 @@
+[
+  { "ticker": "SUNPHARMA", "name": "Sun Pharmaceutical Industries Ltd" },
+  { "ticker": "DRREDDY", "name": "Dr Reddy's Laboratories Ltd" },
+  { "ticker": "CIPLA", "name": "Cipla Ltd" },
+  { "ticker": "DIVISLAB", "name": "Divi's Laboratories Ltd" },
+  { "ticker": "LUPIN", "name": "Lupin Ltd" },
+  { "ticker": "AUROPHARMA", "name": "Aurobindo Pharma Ltd" },
+  { "ticker": "TORNTPHARM", "name": "Torrent Pharmaceuticals Ltd" }
+]

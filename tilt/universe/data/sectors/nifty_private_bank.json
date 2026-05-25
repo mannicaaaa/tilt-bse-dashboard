@@ -1,0 +1,9 @@
+[
+  { "ticker": "HDFCBANK", "name": "HDFC Bank Ltd" },
+  { "ticker": "ICICIBANK", "name": "ICICI Bank Ltd" },
+  { "ticker": "KOTAKBANK", "name": "Kotak Mahindra Bank Ltd" },
+  { "ticker": "AXISBANK", "name": "Axis Bank Ltd" },
+  { "ticker": "INDUSINDBK", "name": "IndusInd Bank Ltd" },
+  { "ticker": "FEDERALBNK", "name": "Federal Bank Ltd" },
+  { "ticker": "IDFCFIRSTB", "name": "IDFC First Bank Ltd" }
+]

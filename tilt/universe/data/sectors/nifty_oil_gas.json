@@ -1,0 +1,9 @@
+[
+  { "ticker": "RELIANCE", "name": "Reliance Industries Ltd" },
+  { "ticker": "ONGC", "name": "Oil & Natural Gas Corporation Ltd" },
+  { "ticker": "BPCL", "name": "Bharat Petroleum Corporation Ltd" },
+  { "ticker": "IOC", "name": "Indian Oil Corporation Ltd" },
+  { "ticker": "GAIL", "name": "GAIL (India) Ltd" },
+  { "ticker": "HINDPETRO", "name": "Hindustan Petroleum Corporation Ltd" },
+  { "ticker": "PETRONET", "name": "Petronet LNG Ltd" }
+]

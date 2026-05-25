@@ -1,0 +1,10 @@
+[
+  { "ticker": "TATASTEEL", "name": "Tata Steel Ltd" },
+  { "ticker": "JSWSTEEL", "name": "JSW Steel Ltd" },
+  { "ticker": "HINDALCO", "name": "Hindalco Industries Ltd" },
+  { "ticker": "VEDL", "name": "Vedanta Ltd" },
+  { "ticker": "SAIL", "name": "Steel Authority of India Ltd" },
+  { "ticker": "NMDC", "name": "NMDC Ltd" },
+  { "ticker": "JINDALSTEL", "name": "Jindal Steel & Power Ltd" },
+  { "ticker": "NATIONALUM", "name": "National Aluminium Company Ltd" }
+]

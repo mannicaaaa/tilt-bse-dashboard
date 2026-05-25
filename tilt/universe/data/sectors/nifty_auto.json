@@ -1,0 +1,10 @@
+[
+  { "ticker": "MARUTI", "name": "Maruti Suzuki India Ltd" },
+  { "ticker": "M&M", "name": "Mahindra & Mahindra Ltd" },
+  { "ticker": "TATAMOTORS", "name": "Tata Motors Ltd" },
+  { "ticker": "BAJAJ-AUTO", "name": "Bajaj Auto Ltd" },
+  { "ticker": "HEROMOTOCO", "name": "Hero MotoCorp Ltd" },
+  { "ticker": "EICHERMOT", "name": "Eicher Motors Ltd" },
+  { "ticker": "TVSMOTOR", "name": "TVS Motor Company Ltd" },
+  { "ticker": "ASHOKLEY", "name": "Ashok Leyland Ltd" }
+]

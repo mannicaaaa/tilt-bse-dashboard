@@ -1,0 +1,11 @@
+[
+  { "ticker": "RELIANCE", "name": "Reliance Industries Ltd" },
+  { "ticker": "NTPC", "name": "NTPC Ltd" },
+  { "ticker": "POWERGRID", "name": "Power Grid Corporation of India Ltd" },
+  { "ticker": "ONGC", "name": "Oil & Natural Gas Corporation Ltd" },
+  { "ticker": "BPCL", "name": "Bharat Petroleum Corporation Ltd" },
+  { "ticker": "IOC", "name": "Indian Oil Corporation Ltd" },
+  { "ticker": "COALINDIA", "name": "Coal India Ltd" },
+  { "ticker": "GAIL", "name": "GAIL (India) Ltd" },
+  { "ticker": "TATAPOWER", "name": "Tata Power Company Ltd" }
+]
