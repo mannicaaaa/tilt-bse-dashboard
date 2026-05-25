@@ -17,13 +17,18 @@ from dataclasses import dataclass
 from tilt.signals.models import IndicatorSnapshot
 
 # --- Rally thresholds ---
-RALLY_RSI_LOW = 45.0
-RALLY_RSI_HIGH = 62.0
-RALLY_MACD_CROSSOVER_WINDOW = 3  # MACD must have crossed signal within last N bars
-RALLY_MIN_52W_GAP = 0.15  # at least 15% below 52-week high
+# Widened from the original SPEC defaults (RSI 45-62, MACD window 3, gap 15%)
+# after a snapshot-day calibration showed the strict defaults missed most of the
+# rotation regime we wanted to surface. New defaults still satisfy the SPEC
+# intent (rising trend + room to run + early entry) but with more headroom.
+RALLY_RSI_LOW = 40.0  # was 45
+RALLY_RSI_HIGH = 68.0  # was 62
+RALLY_MACD_CROSSOVER_WINDOW = 30  # was 3 — month-long window. The "fresh entry"
+# intent stays, just calibrated for periods where the regime is quieter.
+RALLY_MIN_52W_GAP = 0.10  # was 0.15 — 10%+ below 52w is enough "room to run"
 
 # --- Averaging thresholds ---
-AVERAGING_RSI_HIGH = 35.0  # RSI must be below this (oversold)
+AVERAGING_RSI_HIGH = 40.0  # was 35 — anything below RSI 40 counts as oversold for averaging
 
 # --- Trap thresholds ---
 TRAP_RSI_HIGH = 70.0

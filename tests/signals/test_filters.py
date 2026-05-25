@@ -28,7 +28,8 @@ class TestRally:
         }
 
     def test_fails_if_macd_crossover_outside_window(self, make_snapshot) -> None:
-        snap = make_snapshot(rsi=55, ema20=100, pct_below_52w_high=0.20, macd_crossover_days_ago=10)
+        # Window is 30 bars now; 45 days ago is firmly outside.
+        snap = make_snapshot(rsi=55, ema20=100, pct_below_52w_high=0.20, macd_crossover_days_ago=45)
         out = evaluate_rally(snap, cmp=105.0)
         assert not out.passed
         assert "macd_crossover_3d" not in out.triggers
@@ -58,7 +59,8 @@ class TestRally:
         assert "ema20_support" not in out.triggers
 
     def test_fails_if_too_close_to_52w_high(self, make_snapshot) -> None:
-        snap = make_snapshot(rsi=55, ema20=100, pct_below_52w_high=0.10, macd_crossover_days_ago=1)
+        # Below the 10% gap threshold — should not pass.
+        snap = make_snapshot(rsi=55, ema20=100, pct_below_52w_high=0.05, macd_crossover_days_ago=1)
         out = evaluate_rally(snap, cmp=105.0)
         assert not out.passed
 
