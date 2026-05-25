@@ -1,0 +1,42 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+.venv/
+venv/
+env/
+*.egg-info/
+dist/
+build/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+
+# Environment — never commit secrets
+.env
+.env.local
+.env.*.local
+
+# Local OHLCV cache + SQLite state
+data/cache/
+data/*.parquet
+data/*.db
+data/*.sqlite
+
+# Keep tracked: mock portfolio + .gitkeep
+!data/mock_portfolio.json
+!data/.gitkeep
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*~
