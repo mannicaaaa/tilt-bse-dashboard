@@ -90,6 +90,39 @@ function App() {
   const [refreshStats, setRefreshStats] = useState({ duration: 3.2, tickers: 47, cacheHits: 12 });
   const lastRefreshed = useTimeAgo(refreshedAt);
 
+  // --- Live data wiring ---
+  // If TILT_API_BASE is set, fetch live on mount. Otherwise fall back to
+  // the hand-tuned seed data in data.jsx so the dashboard always renders.
+  const [liveData, setLiveData] = useState(null);
+  const [apiError, setApiError] = useState(null);
+
+  useEffect(() => {
+    if (!window.TiltAPI || !window.TiltAPI.isLive()) {
+      // Mock mode — use seed data directly.
+      setLiveData(window.TiltData);
+      return;
+    }
+    let cancelled = false;
+    window.TiltAPI.fetchTiltData()
+      .then((data) => {
+        if (cancelled) return;
+        // Merge: API-derived fields win; missing fields (STOCK_OHLC, BACKTEST_*)
+        // fall back to seed data so sub-screens that aren't lazy-wired yet still
+        // render rather than crash.
+        setLiveData({ ...window.TiltData, ...data });
+        setRefreshedAt(new Date());
+      })
+      .catch((err) => {
+        console.error('Tilt API initial fetch failed; using mock seed:', err);
+        if (cancelled) return;
+        setLiveData(window.TiltData);
+        setApiError(err.message);
+      });
+    return () => { cancelled = true; };
+  }, []);
+
+  const data = liveData || window.TiltData;
+
   // Theme management
   useEffect(() => {
     const html = document.documentElement;
@@ -107,17 +140,37 @@ function App() {
     window.scrollTo({ top: 0, behavior: 'instant' });
   }, []);
 
-  const onRefresh = () => {
+  const onRefresh = async () => {
     setRefreshing(true);
-    setTimeout(() => {
+    try {
+      if (window.TiltAPI && window.TiltAPI.isLive()) {
+        // Real refresh: POST /refresh, then re-fetch the dashboard payload.
+        const refreshResp = await window.TiltAPI.refresh();
+        const fresh = await window.TiltAPI.fetchTiltData();
+        setLiveData({ ...window.TiltData, ...fresh });
+        setRefreshedAt(new Date());
+        setRefreshStats({
+          duration: refreshResp.duration_seconds,
+          tickers: refreshResp.tickers_fetched,
+          cacheHits: refreshResp.cache_hits,
+        });
+        setApiError(null);
+      } else {
+        // Mock refresh — simulate latency for the UI animation.
+        await new Promise((r) => setTimeout(r, 1100));
+        setRefreshedAt(new Date());
+        setRefreshStats({
+          duration: (2.4 + Math.random() * 2.4).toFixed(1) * 1,
+          tickers: 47,
+          cacheHits: Math.floor(8 + Math.random() * 12),
+        });
+      }
+    } catch (err) {
+      console.error('Refresh failed:', err);
+      setApiError(err.message);
+    } finally {
       setRefreshing(false);
-      setRefreshedAt(new Date());
-      setRefreshStats({
-        duration: (2.4 + Math.random() * 2.4).toFixed(1) * 1,
-        tickers: 47,
-        cacheHits: Math.floor(8 + Math.random() * 12),
-      });
-    }, 1100);
+    }
   };
 
   const onToggleTheme = () => setTweak('theme', tweaks.theme === 'dark' ? 'light' : 'dark');
@@ -125,20 +178,20 @@ function App() {
   // Currently active sidebar item (stock detail keeps Scan highlighted)
   const sidebarCurrent = route.screen === 'stock' ? 'scan' : route.screen;
 
-  // Map nav -> screen
+  // Map nav -> screen. `data` is liveData when API is reachable, mock otherwise.
   const renderScreen = () => {
     switch (route.screen) {
       case 'dashboard':
-        return <ScreenDashboard data={TiltData} refreshing={refreshing} lastRefreshed={lastRefreshed}
+        return <ScreenDashboard data={data} refreshing={refreshing} lastRefreshed={lastRefreshed}
           onRefresh={onRefresh} navigate={navigate} refreshStats={refreshStats} />;
       case 'portfolio':
-        return <ScreenPortfolio data={TiltData} navigate={navigate} initialTab={route.extra?.tab || 'all'} />;
+        return <ScreenPortfolio data={data} navigate={navigate} initialTab={route.extra?.tab || 'all'} />;
       case 'scan':
-        return <ScreenScan data={TiltData} navigate={navigate} initialFilter={route.extra?.sectorFilter || 'all'} />;
+        return <ScreenScan data={data} navigate={navigate} initialFilter={route.extra?.sectorFilter || 'all'} />;
       case 'stock':
-        return <ScreenStock ticker={route.params} data={TiltData} navigate={navigate} />;
+        return <ScreenStock ticker={route.params} data={data} navigate={navigate} />;
       case 'backtest':
-        return <ScreenBacktest data={TiltData} navigate={navigate} />;
+        return <ScreenBacktest data={data} navigate={navigate} />;
       case 'settings':
         return <ScreenSettings />;
       default:

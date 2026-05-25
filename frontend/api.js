@@ -123,17 +123,22 @@
 
   // Compose a live-mode TiltData payload by fanning out the relevant endpoints
   // in parallel. Returns an object with the same fields the screens expect.
+  //
+  // We fetch the FULL /scan/rally (limit 200) so the Scan screen has a
+  // complete list, and the Dashboard's `score >= 0.8` filter naturally picks
+  // the conviction subset. Backtest + per-stock OHLC are fetched lazily by
+  // their respective screens — too expensive to load up front.
   async function fetchTiltData() {
-    const [heatmap, conviction, portfolio] = await Promise.all([
+    const [heatmap, rallyAll, portfolio] = await Promise.all([
       TiltAPI.sectorsHeatmap(),
-      TiltAPI.scanRallyConviction(),
+      TiltAPI.scanRally(200),
       TiltAPI.portfolio(),
     ]);
     return {
       SECTORS: heatmap.sectors.map(adaptSector),
-      STOCKS: conviction.results.map(adaptScanResult),
+      STOCKS: rallyAll.results.map(adaptScanResult),
       HOLDINGS: portfolio.holdings.map(adaptHolding),
-      // STOCK_OHLC / BACKTEST_* fetched lazily by the screens that need them
+      // Sub-screen data (lazy):
       STOCK_OHLC: null,
       BACKTEST: null,
       BACKTEST_SIGNALS: null,
@@ -141,8 +146,49 @@
     };
   }
 
+  // Adapter for a single stock-detail response — used by the Stock screen.
+  function adaptStockDetail(resp) {
+    const ohlc = (resp.ohlcv || []).map((bar) => ({
+      date: bar.date,
+      open: bar.open,
+      high: bar.high,
+      low: bar.low,
+      close: bar.close,
+      volume: bar.volume,
+    }));
+    return {
+      ticker: resp.ticker,
+      name: resp.name,
+      cmp: resp.cmp,
+      sector: resp.sector,
+      sectorState: (resp.sector_tag || "").toLowerCase(),
+      ohlc,
+      indicatorSeries: resp.indicator_series,
+    };
+  }
+
+  // Adapter for /backtest/rally response → frontend BACKTEST shape.
+  function adaptBacktest(resp) {
+    return {
+      BACKTEST: {
+        lastRun: new Date().toISOString().slice(0, 10),
+        duration: 0,
+        triggers: resp.metrics.triggers,
+        hitRate: resp.metrics.hit_rate_30d,
+        avgReturn: resp.metrics.avg_fwd_return_30d,
+        maxDD: resp.metrics.max_drawdown_per_signal,
+      },
+      // Per-signal events + cumulative curve aren't returned by the current
+      // /backtest endpoint — the engine has them in memory but doesn't expose
+      // them. Sub-screen falls back to mock for these until the endpoint is
+      // extended in a follow-up.
+      BACKTEST_SIGNALS: null,
+      BACKTEST_CURVE: null,
+    };
+  }
+
   TiltAPI.fetchTiltData = fetchTiltData;
-  TiltAPI.adapters = { adaptSector, adaptScanResult, adaptHolding };
+  TiltAPI.adapters = { adaptSector, adaptScanResult, adaptHolding, adaptStockDetail, adaptBacktest };
 
   window.TiltAPI = TiltAPI;
 })();
