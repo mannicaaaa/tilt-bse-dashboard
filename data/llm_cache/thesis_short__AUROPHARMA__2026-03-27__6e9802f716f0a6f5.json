@@ -2,6 +2,6 @@
   "kind": "thesis_short",
   "ticker": "AUROPHARMA",
   "snapshot_date": "2026-03-27",
-  "text": "MACD turned positive 1 day ago.",
+  "text": "Aurobindo Pharma presents a compelling buy opportunity, driven by strong short-term momentum as indicated by its MACD turning positive just one day ago and a robust RSI of 63.49. Trading 3.9% above its 20-day EMA at Rs.1314.19, the stock is currently at its 52-week high, which could signal a breakout for further gains despite the neutral sector backdrop.",
   "prompt": "You are a CFA-level equity analyst writing a 2-3 sentence buy thesis.\n\nStock: AUROPHARMA (Aurobindo Pharma Ltd)\nSector: Nifty Pharma (Neutral)\nLane: momentum\nIndicators (these are the ONLY facts you may cite):\n  RSI: 63.49\n  MACD histogram: 1.4539\n  Price: Rs.1314.199951171875\n  EMA20: Rs.1264.61\n  Distance below 52-week high: 0.0%\n  MACD crossover: 1 days ago\nMutual fund context: none\n\nPros (already analyzed): MACD turned positive 1 day ago; Trading 3.9% above 20-day moving average; RSI 63 \u2014 strong upside momentum\nCons (already analyzed): Sector momentum is Neutral \u2014 no strong tailwind; Only 0.0% below 52w high \u2014 limited upside cushion\n\nCRITICAL RULES:\n- Use ONLY the values above. Do not invent prices, percentages, or company facts.\n- Write 2-3 sentences total. Plain English. No jargon-heavy phrasing.\n- Explain WHY the technical signals matter for an entry decision.\n- If MF context is present, weave in that fund-manager conviction.\n- Do not output disclaimers, ratings, or price targets.\n\nTHESIS:"
 }

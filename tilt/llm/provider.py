@@ -160,11 +160,11 @@ class DeterministicProvider(LLMProvider):
 
 
 class GeminiProvider(LLMProvider):
-    """Google Gemini Flash adapter.
+    """Google Gemini Flash adapter (new google-genai SDK).
 
-    Imports ``google.generativeai`` lazily so the rest of the app doesn't
-    require the SDK to be installed. The factory picks the deterministic
-    fallback when import fails or no key is configured.
+    Imports lazily so the rest of the app doesn't require the SDK installed.
+    The factory picks the deterministic fallback when import fails or no key
+    is configured.
     """
 
     name = "gemini"
@@ -174,7 +174,7 @@ class GeminiProvider(LLMProvider):
         api_key: str,
         *,
         cache: LLMCache | None = None,
-        model_name: str = "gemini-1.5-flash",
+        model_name: str = "gemini-2.5-flash",
         fallback: LLMProvider | None = None,
     ) -> None:
         self.api_key = api_key
@@ -187,11 +187,10 @@ class GeminiProvider(LLMProvider):
         if self._client is not None:
             return self._client
         try:
-            import google.generativeai as genai  # type: ignore[import-not-found]
+            from google import genai  # type: ignore[import-not-found]
         except ImportError:
             return None
-        genai.configure(api_key=self.api_key)
-        self._client = genai.GenerativeModel(self.model_name)
+        self._client = genai.Client(api_key=self.api_key)
         return self._client
 
     def _call(self, prompt: str) -> str | None:
@@ -199,11 +198,18 @@ class GeminiProvider(LLMProvider):
         if client is None:
             return None
         try:
-            resp = client.generate_content(prompt)
+            resp = client.models.generate_content(
+                model=self.model_name,
+                contents=prompt,
+            )
             text = getattr(resp, "text", None)
             if isinstance(text, str) and text.strip():
                 return text.strip()
-        except Exception:
+        except Exception as e:
+            # Log but don't crash — fallback will handle it.
+            import logging
+
+            logging.getLogger(__name__).warning("Gemini call failed: %s", e)
             return None
         return None
 
