@@ -26,6 +26,7 @@ select = [
 ]
 ignore = [
     "E501", # line length handled by formatter
+    "B008", # FastAPI's Depends() idiom uses function calls in defaults
 ]
 
 [tool.ruff.format]
