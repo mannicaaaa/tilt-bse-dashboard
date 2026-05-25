@@ -1,0 +1,7 @@
+{
+  "kind": "market_read",
+  "ticker": "",
+  "snapshot_date": "2026-05-26",
+  "text": "Markets are in a mixed phase today. The Smart Money lane is broad at 5 candidates while only 0 stocks cleared the strict Strong filter. Nifty Financial Services is the strongest sector by relative momentum.",
+  "prompt": "You are writing the daily market read for a quant equity dashboard. 2-3 sentences.\n\nToday's snapshot: 2026-05-26\nUniverse scanned: 94 tickers\nLane distribution: {\"momentum\": 0, \"smart_money\": 5, \"strong\": 0, \"value\": 0}\nSector momentum (top 3): Nifty Financial Services (0.006), Nifty Private Bank (0.005), Nifty Bank (0.003)\nSector momentum (bottom 3): Nifty Auto (0.0), Nifty Consumer Durables (0.0), Nifty Metal (0.0)\n\nCRITICAL RULES:\n- Use ONLY the numbers above. Do not invent index moves, FII flows, or news.\n- Explain the regime: are stocks broadly oversold, momentum-heavy, mixed?\n- Mention 1-2 sector names (use the actual names from the data).\n- 2-3 sentences max. Direct prose. No bullet points.\n\nMARKET READ:"
+}

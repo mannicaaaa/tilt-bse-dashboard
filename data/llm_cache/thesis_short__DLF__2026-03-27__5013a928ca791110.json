@@ -1,0 +1,7 @@
+{
+  "kind": "thesis_short",
+  "ticker": "DLF",
+  "snapshot_date": "2026-03-27",
+  "text": "RSI 35 \u2014 clearly oversold.",
+  "prompt": "You are a CFA-level equity analyst writing a 2-3 sentence buy thesis.\n\nStock: DLF (DLF Ltd)\nSector: Nifty Realty (Hot)\nLane: value\nIndicators (these are the ONLY facts you may cite):\n  RSI: 34.88\n  MACD histogram: -1.1877\n  Price: Rs.523.0\n  EMA20: Rs.558.36\n  Distance below 52-week high: 40.16%\n  MACD crossover: no recent crossover days ago\nMutual fund context: held by 1 tracked MF (Parag Parikh Flexi Cap)\n\nPros (already analyzed): RSI 35 \u2014 clearly oversold; 40.2% below 52-week high \u2014 value gap intact; MACD histogram turning up \u2014 bottom may be in; Held by 1 tracked MF\nCons (already analyzed): MACD still negative (-1.19) \u2014 no reversal yet; 6.3% below 20-day average \u2014 trend not turned\n\nCRITICAL RULES:\n- Use ONLY the values above. Do not invent prices, percentages, or company facts.\n- Write 2-3 sentences total. Plain English. No jargon-heavy phrasing.\n- Explain WHY the technical signals matter for an entry decision.\n- If MF context is present, weave in that fund-manager conviction.\n- Do not output disclaimers, ratings, or price targets.\n\nTHESIS:"
+}

@@ -168,6 +168,49 @@ class RecommendationsResponse(BaseModel):
     data_mode: str = "snapshot"  # "snapshot" | "live"
 
 
+class BriefPickSchema(BaseModel):
+    ticker: str
+    name: str
+    lane: str
+    cmp: float
+    score: float
+    sector: str
+    sector_tag: str
+    indicators: dict[str, float]
+    score_breakdown: dict[str, float]
+    pros: list[str]
+    cons: list[str]
+    mf_context: MFContextSchema | None = None
+    thesis: str | None = None
+    thesis_short: str | None = None
+    why_this: str | None = None
+
+
+class ScanStatsSchema(BaseModel):
+    tickers_scanned: int
+    total_picks: int
+    lane_counts: dict[str, int]
+
+
+class BriefSectorSchema(BaseModel):
+    name: str
+    momentum: float
+    rank: int
+    state: str  # "hot" | "neutral" | "cold"
+
+
+class BriefResponse(BaseModel):
+    snapshot_date: str
+    generated_at: datetime
+    market_read: str
+    scan_stats: ScanStatsSchema
+    hero: BriefPickSchema | None = None
+    supporting: list[BriefPickSchema] = []
+    sectors: list[BriefSectorSchema] = []
+    llm_provider: str  # "gemini" | "deterministic" — surfaces fallback transparently
+    data_mode: str = "snapshot"
+
+
 class RefreshResponse(BaseModel):
     refreshed_at: datetime
     duration_seconds: float

@@ -18,5 +18,10 @@ uvicorn[standard]>=0.27
 pydantic>=2.5
 httpx>=0.27  # used by fastapi.testclient
 
+# --- LLM narrative layer (v3) ---
+# Optional at runtime — if missing or no GEMINI_API_KEY, the deterministic
+# fallback in tilt.llm.provider takes over. Pinning a floor only.
+google-generativeai>=0.7
+
 # --- Test (step 3) ---
 pytest>=8.0

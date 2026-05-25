@@ -1,0 +1,7 @@
+{
+  "kind": "thesis_short",
+  "ticker": "INFY",
+  "snapshot_date": "2026-03-27",
+  "text": "MACD turned positive 15 days ago.",
+  "prompt": "You are a CFA-level equity analyst writing a 2-3 sentence buy thesis.\n\nStock: INFY (Infosys Ltd)\nSector: Nifty IT (Hot)\nLane: smart_money\nIndicators (these are the ONLY facts you may cite):\n  RSI: 40.23\n  MACD histogram: 11.3579\n  Price: Rs.1269.699951171875\n  EMA20: Rs.1289.98\n  Distance below 52-week high: 24.86%\n  MACD crossover: 15 days ago\nMutual fund context: held by 2 tracked MF (ICICI Prudential Bluechip, Mirae Asset Large Cap)\n\nPros (already analyzed): MACD turned positive 15 days ago; RSI 40; 24.9% below 52-week high \u2014 value gap intact\nCons (already analyzed): (none)\n\nCRITICAL RULES:\n- Use ONLY the values above. Do not invent prices, percentages, or company facts.\n- Write 2-3 sentences total. Plain English. No jargon-heavy phrasing.\n- Explain WHY the technical signals matter for an entry decision.\n- If MF context is present, weave in that fund-manager conviction.\n- Do not output disclaimers, ratings, or price targets.\n\nTHESIS:"
+}
