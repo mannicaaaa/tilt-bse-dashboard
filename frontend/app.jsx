@@ -91,10 +91,22 @@ function App() {
   const lastRefreshed = useTimeAgo(refreshedAt);
 
   // --- Live data wiring ---
-  // If TILT_API_BASE is set, fetch live on mount. Otherwise fall back to
-  // the hand-tuned seed data in data.jsx so the dashboard always renders.
+  // If TILT_API_BASE is set, fetch live on mount. On failure we surface the
+  // error explicitly and render screens against an empty data shape — no
+  // silent fallback to mock that would hide the broken API.
+  const NULL_DATA = {
+    SECTORS: [],
+    STOCKS: [],
+    HOLDINGS: [],
+    STOCK_OHLC: [],
+    BACKTEST: { lastRun: '—', duration: 0, triggers: 0, hitRate: 0, avgReturn: 0, maxDD: 0 },
+    BACKTEST_SIGNALS: [],
+    BACKTEST_CURVE: { strat: [], bench: [] },
+  };
+
   const [liveData, setLiveData] = useState(null);
   const [apiError, setApiError] = useState(null);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     if (!window.TiltAPI || !window.TiltAPI.isLive()) {
@@ -103,25 +115,27 @@ function App() {
       return;
     }
     let cancelled = false;
+    setLoading(true);
     window.TiltAPI.fetchTiltData()
       .then((data) => {
         if (cancelled) return;
-        // Merge: API-derived fields win; missing fields (STOCK_OHLC, BACKTEST_*)
-        // fall back to seed data so sub-screens that aren't lazy-wired yet still
-        // render rather than crash.
-        setLiveData({ ...window.TiltData, ...data });
+        setLiveData({ ...NULL_DATA, ...data });
         setRefreshedAt(new Date());
+        setApiError(null);
       })
       .catch((err) => {
-        console.error('Tilt API initial fetch failed; using mock seed:', err);
+        console.error('Tilt API initial fetch failed:', err);
         if (cancelled) return;
-        setLiveData(window.TiltData);
-        setApiError(err.message);
+        setLiveData(NULL_DATA);
+        setApiError(err.message || 'API unreachable');
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
       });
     return () => { cancelled = true; };
   }, []);
 
-  const data = liveData || window.TiltData;
+  const data = liveData || NULL_DATA;
 
   // Theme management
   useEffect(() => {
@@ -144,10 +158,9 @@ function App() {
     setRefreshing(true);
     try {
       if (window.TiltAPI && window.TiltAPI.isLive()) {
-        // Real refresh: POST /refresh, then re-fetch the dashboard payload.
         const refreshResp = await window.TiltAPI.refresh();
         const fresh = await window.TiltAPI.fetchTiltData();
-        setLiveData({ ...window.TiltData, ...fresh });
+        setLiveData({ ...NULL_DATA, ...fresh });
         setRefreshedAt(new Date());
         setRefreshStats({
           duration: refreshResp.duration_seconds,
@@ -156,7 +169,7 @@ function App() {
         });
         setApiError(null);
       } else {
-        // Mock refresh — simulate latency for the UI animation.
+        // Mock refresh — only when no API base configured.
         await new Promise((r) => setTimeout(r, 1100));
         setRefreshedAt(new Date());
         setRefreshStats({
@@ -167,7 +180,8 @@ function App() {
       }
     } catch (err) {
       console.error('Refresh failed:', err);
-      setApiError(err.message);
+      setApiError(err.message || 'Refresh failed');
+      setLiveData(NULL_DATA);
     } finally {
       setRefreshing(false);
     }
@@ -210,6 +224,32 @@ function App() {
         theme={tweaks.theme}
         onToggleTheme={onToggleTheme}
       />
+      {apiError && (
+        <div style={{
+          margin: '0 auto', maxWidth: 1440, padding: '12px 32px',
+        }}>
+          <div style={{
+            padding: '10px 14px',
+            border: '1px solid rgba(248,113,113,0.4)',
+            background: 'rgba(248,113,113,0.08)',
+            color: '#FCA5A5',
+            borderRadius: 8,
+            fontSize: 13,
+            fontFamily: 'JetBrains Mono, ui-monospace, monospace',
+          }}>
+            API error: {apiError}. Showing empty state. Hit Refresh to retry.
+          </div>
+        </div>
+      )}
+      {loading && !liveData && (
+        <div style={{
+          margin: '0 auto', maxWidth: 1440, padding: '12px 32px',
+          color: '#A1A1AA', fontSize: 13,
+          fontFamily: 'JetBrains Mono, ui-monospace, monospace',
+        }}>
+          Loading data from API…
+        </div>
+      )}
       <Shell>{renderScreen()}</Shell>
 
       <TweaksPanel>
