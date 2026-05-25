@@ -1,0 +1,21 @@
+# Vercel deploys ONLY frontend/. Everything below is the Python backend
+# (lives on Render) — Vercel must not see it or it will try to deploy it
+# as a serverless function and fail.
+
+tilt/
+tests/
+data/
+docs/
+.venv/
+.claude/
+*.py
+pyproject.toml
+requirements.txt
+runtime.txt
+Procfile
+render.yaml
+.gitignore
+README.md
+CLAUDE.md
+BOOTSTRAP.md
+LICENSE
