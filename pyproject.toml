@@ -8,7 +8,9 @@ license = { text = "MIT" }
 [tool.ruff]
 line-length = 100
 target-version = "py312"
-extend-exclude = ["data", "docs"]
+# Anchor exclusions to the project root with a leading slash — bare "data"
+# would also match our `tilt/data/` package and silently skip it.
+extend-exclude = ["/data", "/docs", "/frontend"]
 
 [tool.ruff.lint]
 select = [
@@ -35,4 +37,7 @@ testpaths = ["tests"]
 python_files = ["test_*.py"]
 python_classes = ["Test*"]
 python_functions = ["test_*"]
-addopts = "-v --tb=short --strict-markers"
+addopts = "-v --tb=short --strict-markers -m 'not integration'"
+markers = [
+    "integration: live-network tests; opt in with `pytest -m integration`",
+]
