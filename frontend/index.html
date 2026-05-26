@@ -81,24 +81,26 @@
 <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
 <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
 
-<!-- Data + helpers (plain JS, not babel) -->
-<script src="data.js"></script>
+<!-- Live API base — fetches /scan/brief + /portfolio from here -->
+<script>window.TILT_API_BASE = "https://tilt-api-2fhp.onrender.com";</script>
 
-<!-- Tweaks shell -->
-<script type="text/babel" src="tweaks-panel.jsx"></script>
+<!-- Cache-bust query string (?v=...) forces browsers to re-download these
+     files when we ship new behavior. Bump the version on every push that
+     changes JSX/JS so users + Vercel CDN don't serve stale assets. -->
+<script src="data.js?v=20260526a"></script>
 
-<!-- Components -->
-<script type="text/babel" src="components/icon.jsx"></script>
-<script type="text/babel" src="components/lane-tag.jsx"></script>
-<script type="text/babel" src="components/top-nav.jsx"></script>
-<script type="text/babel" src="components/market-read.jsx"></script>
-<script type="text/babel" src="components/hero-pick.jsx"></script>
-<script type="text/babel" src="components/supporting-pick.jsx"></script>
-<script type="text/babel" src="components/sector-strip.jsx"></script>
-<script type="text/babel" src="components/portfolio-sidebar.jsx"></script>
-<script type="text/babel" src="components/stock-detail.jsx"></script>
+<script type="text/babel" src="tweaks-panel.jsx?v=20260526a"></script>
 
-<!-- App -->
-<script type="text/babel" src="app.jsx"></script>
+<script type="text/babel" src="components/icon.jsx?v=20260526a"></script>
+<script type="text/babel" src="components/lane-tag.jsx?v=20260526a"></script>
+<script type="text/babel" src="components/top-nav.jsx?v=20260526a"></script>
+<script type="text/babel" src="components/market-read.jsx?v=20260526a"></script>
+<script type="text/babel" src="components/hero-pick.jsx?v=20260526a"></script>
+<script type="text/babel" src="components/supporting-pick.jsx?v=20260526a"></script>
+<script type="text/babel" src="components/sector-strip.jsx?v=20260526a"></script>
+<script type="text/babel" src="components/portfolio-sidebar.jsx?v=20260526a"></script>
+<script type="text/babel" src="components/stock-detail.jsx?v=20260526a"></script>
+
+<script type="text/babel" src="app.jsx?v=20260526a"></script>
 </body>
 </html>

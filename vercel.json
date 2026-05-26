@@ -4,5 +4,13 @@
   "buildCommand": null,
   "installCommand": null,
   "outputDirectory": "frontend",
-  "trailingSlash": false
+  "trailingSlash": false,
+  "headers": [
+    {
+      "source": "/(.*\\.(jsx|js|html))",
+      "headers": [
+        { "key": "Cache-Control", "value": "no-cache, no-store, must-revalidate" }
+      ]
+    }
+  ]
 }
