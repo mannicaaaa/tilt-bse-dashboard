@@ -104,15 +104,19 @@ const HeroPick = ({ pick, onOpenDetail }) => {
         />
       </div>
 
-      {/* THESIS */}
+      {/* THESIS — typewriter reveal so it feels like AI is writing it */}
       <Block title="Thesis">
         <p
           style={{
             fontSize: 15, lineHeight: 1.65, color: "var(--fg)",
-            margin: 0, textWrap: "pretty",
+            margin: 0, minHeight: 100, textWrap: "pretty",
           }}
         >
-          {pick.thesis}
+          {window.Typewriter ? (
+            <window.Typewriter text={pick.thesis || ""} speed={12} />
+          ) : (
+            pick.thesis
+          )}
         </p>
       </Block>
 

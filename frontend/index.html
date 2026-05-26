@@ -72,6 +72,10 @@
     from { transform: rotate(0deg); }
     to   { transform: rotate(360deg); }
   }
+  @keyframes tilt-caret-blink {
+    0%, 100% { opacity: 1; }
+    50%      { opacity: 0; }
+  }
 </style>
 </head>
 <body>
@@ -87,20 +91,20 @@
 <!-- Cache-bust query string (?v=...) forces browsers to re-download these
      files when we ship new behavior. Bump the version on every push that
      changes JSX/JS so users + Vercel CDN don't serve stale assets. -->
-<script src="data.js?v=20260526a"></script>
+<script src="data.js?v=20260526b"></script>
 
-<script type="text/babel" src="tweaks-panel.jsx?v=20260526a"></script>
+<script type="text/babel" src="tweaks-panel.jsx?v=20260526b"></script>
 
-<script type="text/babel" src="components/icon.jsx?v=20260526a"></script>
-<script type="text/babel" src="components/lane-tag.jsx?v=20260526a"></script>
-<script type="text/babel" src="components/top-nav.jsx?v=20260526a"></script>
-<script type="text/babel" src="components/market-read.jsx?v=20260526a"></script>
-<script type="text/babel" src="components/hero-pick.jsx?v=20260526a"></script>
-<script type="text/babel" src="components/supporting-pick.jsx?v=20260526a"></script>
-<script type="text/babel" src="components/sector-strip.jsx?v=20260526a"></script>
-<script type="text/babel" src="components/portfolio-sidebar.jsx?v=20260526a"></script>
-<script type="text/babel" src="components/stock-detail.jsx?v=20260526a"></script>
+<script type="text/babel" src="components/icon.jsx?v=20260526b"></script>
+<script type="text/babel" src="components/lane-tag.jsx?v=20260526b"></script>
+<script type="text/babel" src="components/top-nav.jsx?v=20260526b"></script>
+<script type="text/babel" src="components/market-read.jsx?v=20260526b"></script>
+<script type="text/babel" src="components/hero-pick.jsx?v=20260526b"></script>
+<script type="text/babel" src="components/supporting-pick.jsx?v=20260526b"></script>
+<script type="text/babel" src="components/sector-strip.jsx?v=20260526b"></script>
+<script type="text/babel" src="components/portfolio-sidebar.jsx?v=20260526b"></script>
+<script type="text/babel" src="components/stock-detail.jsx?v=20260526b"></script>
 
-<script type="text/babel" src="app.jsx?v=20260526a"></script>
+<script type="text/babel" src="app.jsx?v=20260526b"></script>
 </body>
 </html>
